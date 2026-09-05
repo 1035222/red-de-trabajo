@@ -243,10 +243,10 @@ class MockChatRepository implements ChatRepository {
 
   final Map<String, List<ChatMessage>> _chatHistory = {
     '1': [
-      ChatMessage(id: '1', text: 'Hola, vi tu servicio de plomería', isMe: true, time: DateTime(2026, 8, 29, 9, 0)),
-      ChatMessage(id: '2', text: '¡Hola! Sí, ¿en qué puedo ayudarte?', isMe: false, time: DateTime(2026, 8, 29, 9, 1)),
-      ChatMessage(id: '3', text: 'Necesito reparar una tubería en la cocina', isMe: true, time: DateTime(2026, 8, 29, 9, 2)),
-      ChatMessage(id: '4', text: 'Perfecto, ¿podemos coordinar para mañana?', isMe: false, time: DateTime(2026, 8, 29, 9, 3)),
+      ChatMessage(id: '1', text: 'Hola, vi tu servicio de plomería', type: MessageType.text, isMe: true, time: DateTime(2026, 8, 29, 9, 0)),
+      ChatMessage(id: '2', text: '¡Hola! Sí, ¿en qué puedo ayudarte?', type: MessageType.text, isMe: false, time: DateTime(2026, 8, 29, 9, 1)),
+      ChatMessage(id: '3', text: 'Necesito reparar una tubería en la cocina', type: MessageType.text, isMe: true, time: DateTime(2026, 8, 29, 9, 2)),
+      ChatMessage(id: '4', text: 'Perfecto, ¿podemos coordinar para mañana?', type: MessageType.text, isMe: false, time: DateTime(2026, 8, 29, 9, 3)),
     ],
   };
 
@@ -270,6 +270,7 @@ class MockChatRepository implements ChatRepository {
       text: text,
       isMe: true,
       time: DateTime.now(),
+      type: MessageType.text,
     );
     _chatHistory.putIfAbsent(conversationId, () => []).add(message);
     final conversation = _conversations.firstWhere((c) => c.id == conversationId);
@@ -277,6 +278,61 @@ class MockChatRepository implements ChatRepository {
       id: conversation.id,
       name: conversation.name,
       lastMessage: text,
+      time: 'Ahora',
+      avatarUrl: conversation.avatarUrl,
+      unread: false,
+    );
+    _conversations.removeWhere((c) => c.id == conversationId);
+    _conversations.insert(0, updated);
+    return message;
+  }
+
+  @override
+  Future<ChatMessage> sendLocation(String conversationId, double latitude, double longitude, String address) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    final message = ChatMessage(
+      id: 'loc_${DateTime.now().millisecondsSinceEpoch}',
+      text: 'Ubicación compartida',
+      isMe: true,
+      time: DateTime.now(),
+      type: MessageType.location,
+      latitude: latitude,
+      longitude: longitude,
+      address: address,
+    );
+    _chatHistory.putIfAbsent(conversationId, () => []).add(message);
+    final conversation = _conversations.firstWhere((c) => c.id == conversationId);
+    final updated = Message(
+      id: conversation.id,
+      name: conversation.name,
+      lastMessage: '📍 Ubicación',
+      time: 'Ahora',
+      avatarUrl: conversation.avatarUrl,
+      unread: false,
+    );
+    _conversations.removeWhere((c) => c.id == conversationId);
+    _conversations.insert(0, updated);
+    return message;
+  }
+
+  @override
+  Future<ChatMessage> sendAudio(String conversationId, int durationSeconds, String audioUrl) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    final message = ChatMessage(
+      id: 'audio_${DateTime.now().millisecondsSinceEpoch}',
+      text: 'Nota de voz',
+      isMe: true,
+      time: DateTime.now(),
+      type: MessageType.audio,
+      audioDurationSeconds: durationSeconds,
+      audioUrl: audioUrl,
+    );
+    _chatHistory.putIfAbsent(conversationId, () => []).add(message);
+    final conversation = _conversations.firstWhere((c) => c.id == conversationId);
+    final updated = Message(
+      id: conversation.id,
+      name: conversation.name,
+      lastMessage: '🎤 Nota de voz',
       time: 'Ahora',
       avatarUrl: conversation.avatarUrl,
       unread: false,

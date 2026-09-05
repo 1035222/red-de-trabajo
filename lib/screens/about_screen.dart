@@ -30,7 +30,7 @@ class AboutScreen extends StatelessWidget {
                       color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(Icons.handshake_rounded, size: 48, color: AppColors.primary),
+                       child: const Icon(Icons.handshake_rounded, size: 48, color: AppColors.primary),
                   ),
                   const SizedBox(height: 24),
                   Text('Red de Trabajo', style: AppTextStyles.headlineLg),

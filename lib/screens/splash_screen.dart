@@ -45,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [BoxShadow(color: AppColors.onPrimary.withValues(alpha: 0.15), blurRadius: 32, offset: const Offset(0, 16))],
               ),
-              child: Icon(Icons.handshake_rounded, size: 56, color: AppColors.onPrimary),
+              child: Image.asset('assets/imagen/image.png', fit: BoxFit.contain),
             ),
             const SizedBox(height: 32),
             Text('Red de Trabajo', style: AppTextStyles.headlineLg.copyWith(color: AppColors.onPrimary, letterSpacing: -0.5)),
