@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/service.dart';
-import '../repositories/mock_repositories.dart';
+import '../services/repository_provider.dart';
 import '../widgets/service_card.dart';
 import '../screens/service_detail_screen.dart';
 
@@ -22,7 +22,7 @@ class _SearchScreenState extends State<SearchScreen> {
   final _searchController = TextEditingController();
   String _selectedCategory = 'Todos';
   String _sortBy = 'relevancia';
-  final _serviceRepository = MockServiceRepository();
+  final _serviceRepository = RepositoryProvider.serviceRepository;
   List<Service> _results = [];
   bool _isLoading = true;
 
@@ -35,19 +35,26 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _loadResults() async {
-    final results = await _serviceRepository.searchServices(_searchController.text, _selectedCategory);
-    if (_sortBy == 'precio_asc') {
-      results.sort((a, b) => a.price.compareTo(b.price));
-    } else if (_sortBy == 'precio_desc') {
-      results.sort((a, b) => b.price.compareTo(a.price));
-    } else if (_sortBy == 'calificacion') {
-      results.sort((a, b) => b.rating.compareTo(a.rating));
-    }
-    if (mounted) {
-      setState(() {
-        _results = results;
-        _isLoading = false;
-      });
+    try {
+      final results = await _serviceRepository.searchServices(_searchController.text, _selectedCategory);
+      if (_sortBy == 'precio_asc') {
+        results.sort((a, b) => a.price.compareTo(b.price));
+      } else if (_sortBy == 'precio_desc') {
+        results.sort((a, b) => b.price.compareTo(a.price));
+      } else if (_sortBy == 'calificacion') {
+        results.sort((a, b) => b.rating.compareTo(a.rating));
+      }
+      if (mounted) {
+        setState(() {
+          _results = results;
+          _isLoading = false;
+        });
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error en la búsqueda: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
     }
   }
 

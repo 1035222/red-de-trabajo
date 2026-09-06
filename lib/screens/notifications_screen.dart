@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/notification.dart';
-import '../repositories/mock_repositories.dart';
+import '../services/repository_provider.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final notificationRepository = MockNotificationRepository();
+    final notificationRepository = RepositoryProvider.notificationRepository;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -24,6 +24,20 @@ class NotificationsScreen extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+                  const SizedBox(height: 16),
+                  Text('Error al cargar notificaciones', style: AppTextStyles.bodyMd),
+                  const SizedBox(height: 8),
+                  Text(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+                ],
+              ),
+            );
           }
           final notifications = snapshot.data ?? [];
           if (notifications.isEmpty) {

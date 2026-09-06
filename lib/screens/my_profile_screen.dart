@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../models/user.dart';
-import '../repositories/mock_repositories.dart';
+import '../models/app_user.dart';
+import '../services/repository_provider.dart';
+import '../services/session_service.dart';
+import '../repositories/profile_repository.dart';
 import 'edit_profile_screen.dart';
 import 'portfolio_screen.dart';
 import 'reviews_screen.dart';
@@ -15,7 +17,8 @@ class MyProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final profileRepository = MockProfileRepository();
+    final profileRepository = RepositoryProvider.profileRepository;
+    final sessionService = SessionService();
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -24,13 +27,27 @@ class MyProfileScreen extends StatelessWidget {
         elevation: 0,
         title: Text('Mi perfil', style: AppTextStyles.titleLg),
       ),
-      body: FutureBuilder<User>(
-        future: profileRepository.getUserProfile('user_1'),
+      body: FutureBuilder<AppUser>(
+        future: _loadUserProfile(profileRepository, sessionService),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final user = snapshot.data ?? User(id: 'user_1', name: 'Usuario', email: '');
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+                  const SizedBox(height: 16),
+                  Text('Error al cargar el perfil', style: AppTextStyles.bodyMd),
+                  const SizedBox(height: 8),
+                  Text(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+                ],
+              ),
+            );
+          }
+          final user = snapshot.data ?? AppUser(id: 'user_1', name: 'Usuario', email: '');
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -47,7 +64,7 @@ class MyProfileScreen extends StatelessWidget {
               _ProfileTile(
                 icon: Icons.work_outline_rounded,
                 title: 'Mis servicios',
-                subtitle: '${user.servicesCount} servicios publicados',
+                subtitle: '${user.servicesCount ?? 0} servicios publicados',
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const MyServicesScreen()));
                 },
@@ -56,7 +73,7 @@ class MyProfileScreen extends StatelessWidget {
               _ProfileTile(
                 icon: Icons.photo_library_outlined,
                 title: 'Portafolio',
-                subtitle: '${user.servicesCount} proyectos',
+                subtitle: '${user.servicesCount ?? 0} proyectos',
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const PortfolioScreen()));
                 },
@@ -65,7 +82,7 @@ class MyProfileScreen extends StatelessWidget {
               _ProfileTile(
                 icon: Icons.rate_review_outlined,
                 title: 'Reseñas',
-                subtitle: 'Calificación ${user.rating.toStringAsFixed(1)}',
+                subtitle: 'Calificación ${(user.rating ?? 0).toStringAsFixed(1)}',
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewsScreen()));
                 },
@@ -94,6 +111,12 @@ class MyProfileScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<AppUser> _loadUserProfile(ProfileRepository profileRepository, SessionService sessionService) async {
+  final session = await sessionService.getSession();
+  final userId = session?.user?.id ?? 'user_1';
+  return profileRepository.getUserProfile(userId);
 }
 
 class _ProfileTile extends StatelessWidget {

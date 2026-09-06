@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/service.dart';
-import '../repositories/mock_repositories.dart';
+import '../services/repository_provider.dart';
 import '../widgets/service_card.dart';
 import '../screens/service_detail_screen.dart';
 
@@ -11,7 +11,7 @@ class FavoritesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final serviceRepository = MockServiceRepository();
+    final serviceRepository = RepositoryProvider.serviceRepository;
     final favoriteIds = <String>{'1', '2', '5'};
 
     return Scaffold(

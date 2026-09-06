@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../repositories/mock_repositories.dart';
-import '../screens/login_screen.dart';
+import '../services/session_service.dart';
+import '../services/firebase_auth_service.dart';
+import '../services/google_sign_in_service.dart';
+import '../screens/splash_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final authRepository = MockAuthRepository();
+    final sessionService = SessionService();
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -35,17 +37,25 @@ class SettingsScreen extends StatelessWidget {
           ]),
           const SizedBox(height: 24),
           _SettingsSection(title: 'Sesión', children: [
-            _SettingsTile(
-              icon: Icons.logout_rounded,
-              title: 'Cerrar sesión',
-              titleColor: AppColors.error,
-              onTap: () async {
-                await authRepository.logout();
-                if (context.mounted) {
-                  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
-                }
-              },
-            ),
+               _SettingsTile(
+                 icon: Icons.logout_rounded,
+                 title: 'Cerrar sesión',
+                 titleColor: AppColors.error,
+                 onTap: () async {
+                   try {
+                     await FirebaseAuthService().signOut();
+                     await sessionService.clearSession();
+                     await GoogleSignInService.signOut();
+                   } catch (e) {
+                     if (context.mounted) {
+                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cerrar sesión: $e')));
+                     }
+                   }
+                   if (context.mounted) {
+                     Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const SplashScreen()), (route) => false);
+                   }
+                 },
+               ),
           ]),
         ],
       ),
@@ -92,20 +102,23 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: (titleColor ?? AppColors.primary).withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: (titleColor ?? AppColors.primary).withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: titleColor ?? AppColors.primary, size: 20),
         ),
-        child: Icon(icon, color: titleColor ?? AppColors.primary, size: 20),
+        title: Text(title, style: AppTextStyles.labelMd.copyWith(color: titleColor ?? AppColors.onSurface)),
+        trailing: trailing,
+        onTap: onTap,
       ),
-      title: Text(title, style: AppTextStyles.labelMd.copyWith(color: titleColor ?? AppColors.onSurface)),
-      trailing: trailing,
-      onTap: onTap,
     );
   }
 }

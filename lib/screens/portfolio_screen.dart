@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/portfolio_item.dart';
-import '../repositories/mock_repositories.dart';
+import '../services/repository_provider.dart';
+import '../services/session_service.dart';
+import '../repositories/profile_repository.dart';
 
 class PortfolioScreen extends StatelessWidget {
   const PortfolioScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final profileRepository = MockProfileRepository();
+    final profileRepository = RepositoryProvider.profileRepository;
+    final sessionService = SessionService();
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -20,10 +23,24 @@ class PortfolioScreen extends StatelessWidget {
         title: Text('Portafolio', style: AppTextStyles.titleLg),
       ),
       body: FutureBuilder<List<PortfolioItem>>(
-        future: profileRepository.getUserPortfolio('user_1'),
+        future: _loadUserPortfolio(profileRepository, sessionService),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+                  const SizedBox(height: 16),
+                  Text('Error al cargar portafolio', style: AppTextStyles.bodyMd),
+                  const SizedBox(height: 8),
+                  Text(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+                ],
+              ),
+            );
           }
           final items = snapshot.data ?? [];
           if (items.isEmpty) {
@@ -97,4 +114,10 @@ class PortfolioScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<List<PortfolioItem>> _loadUserPortfolio(ProfileRepository profileRepository, SessionService sessionService) async {
+  final session = await sessionService.getSession();
+  final userId = session?.user?.id ?? 'user_1';
+  return profileRepository.getUserPortfolio(userId);
 }

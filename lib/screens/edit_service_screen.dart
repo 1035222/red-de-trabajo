@@ -3,7 +3,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/primary_button.dart';
 import '../models/service.dart';
-import '../repositories/mock_repositories.dart';
+import '../services/repository_provider.dart';
 
 class EditServiceScreen extends StatefulWidget {
   final Service service;
@@ -22,7 +22,7 @@ class _EditServiceScreenState extends State<EditServiceScreen> {
   late final _descriptionController = TextEditingController(text: widget.service.description);
   bool _isLoading = false;
 
-  final _serviceRepository = MockServiceRepository();
+  final _serviceRepository = RepositoryProvider.serviceRepository;
 
   @override
   void dispose() {
@@ -38,7 +38,7 @@ class _EditServiceScreenState extends State<EditServiceScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await _serviceRepository.createService(Service(
+      await _serviceRepository.updateService(Service(
         id: widget.service.id,
         title: _titleController.text.trim(),
         providerName: widget.service.providerName,
@@ -52,6 +52,10 @@ class _EditServiceScreenState extends State<EditServiceScreen> {
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Servicio actualizado exitosamente')));
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al actualizar: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

@@ -29,16 +29,17 @@ class Service {
   });
 
   factory Service.fromJson(Map<String, dynamic> json) {
+    final provider = json['provider'] is Map<String, dynamic> ? json['provider'] as Map<String, dynamic> : {};
     return Service(
       id: json['id'] as String,
       title: json['title'] as String,
-      providerName: json['providerName'] as String,
-      providerId: json['providerId'] as String,
-      imageUrl: json['imageUrl'] as String,
-      rating: (json['rating'] as num).toDouble(),
+      providerName: (json['providerName'] as String?) ?? (provider['name'] as String?) ?? '',
+      providerId: (json['providerId'] as String?) ?? (provider['id'] as String?) ?? '',
+      imageUrl: json['imageUrl'] as String? ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       price: json['price'] as String,
       description: json['description'] as String,
-      category: json['category'] as String,
+      category: json['categoryName'] as String? ?? json['category'] as String? ?? '',
       reviewsCount: json['reviewsCount'] as int? ?? 0,
       featured: json['featured'] as bool? ?? false,
     );

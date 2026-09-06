@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -36,21 +37,18 @@ class RTServiceCard extends StatelessWidget {
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                child: Image.network(
-                  imageUrl,
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
+                  placeholder: (context, url) => Container(
+                    color: AppColors.surfaceContainerHighest,
+                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
+                  ),
+                  errorWidget: (context, url, error) => Container(
                     color: AppColors.surfaceContainerHighest,
                     child: const Icon(Icons.image_not_supported_outlined, size: 32, color: AppColors.outline),
                   ),
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
-                    return Container(
-                      color: AppColors.surfaceContainerHighest,
-                      child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)),
-                    );
-                  },
                 ),
               ),
             ),

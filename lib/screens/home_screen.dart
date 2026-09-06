@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/service.dart';
-import '../repositories/mock_repositories.dart';
+import '../services/repository_provider.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/service_card.dart';
 import '../widgets/publish_fab.dart';
@@ -31,7 +31,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  final _serviceRepository = MockServiceRepository();
+  final _serviceRepository = RepositoryProvider.serviceRepository;
   List<Service> _featuredServices = [];
   List<Service> _categoriesServices = [];
   List<Service> _recentServices = [];
@@ -44,15 +44,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    final services = await _serviceRepository.getFeaturedServices();
-    final categories = await _serviceRepository.getAllServices();
-    if (mounted) {
-      setState(() {
-        _featuredServices = services;
-        _categoriesServices = categories;
-        _recentServices = categories.take(4).toList();
-        _isLoading = false;
-      });
+    try {
+      final services = await _serviceRepository.getFeaturedServices();
+      final categories = await _serviceRepository.getAllServices();
+      if (mounted) {
+        setState(() {
+          _featuredServices = services;
+          _categoriesServices = categories;
+          _recentServices = categories.take(4).toList();
+          _isLoading = false;
+        });
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar datos: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
     }
   }
 

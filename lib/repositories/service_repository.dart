@@ -1,5 +1,4 @@
 import '../models/service.dart';
-import '../models/category.dart';
 
 abstract class ServiceRepository {
   Future<List<Service>> getFeaturedServices();
@@ -7,5 +6,6 @@ abstract class ServiceRepository {
   Future<List<Service>> searchServices(String query, String category);
   Future<Service?> getServiceById(String id);
   Future<Service> createService(Service service);
-  Future<List<Category>> getCategories();
+  Future<Service> updateService(Service service);
+  Future<void> deleteService(String id);
 }

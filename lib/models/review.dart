@@ -19,13 +19,14 @@ class Review {
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
+    final dateString = json['date'] as String? ?? json['createdAt'] as String? ?? '';
     return Review(
       id: json['id'] as String,
       userName: json['userName'] as String,
-      userAvatar: json['userAvatar'] as String,
+      userAvatar: json['userAvatar'] as String? ?? '',
       rating: (json['rating'] as num).toDouble(),
       comment: json['comment'] as String,
-      date: DateTime.parse(json['date'] as String),
+      date: dateString.isEmpty ? DateTime.now() : DateTime.parse(dateString),
     );
   }
 

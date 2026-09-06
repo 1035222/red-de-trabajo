@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/service.dart';
-import '../repositories/mock_repositories.dart';
+import '../services/repository_provider.dart';
+import '../services/session_service.dart';
 import '../widgets/service_card.dart';
 import '../screens/service_detail_screen.dart';
 import '../screens/edit_service_screen.dart';
@@ -15,7 +16,8 @@ class MyServicesScreen extends StatefulWidget {
 }
 
 class _MyServicesScreenState extends State<MyServicesScreen> {
-  final _serviceRepository = MockServiceRepository();
+  final _serviceRepository = RepositoryProvider.serviceRepository;
+  final _sessionService = SessionService();
   List<Service> _myServices = [];
   bool _isLoading = true;
 
@@ -26,12 +28,21 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
   }
 
   Future<void> _loadServices() async {
-    final services = await _serviceRepository.getAllServices();
-    if (mounted) {
-      setState(() {
-        _myServices = services.where((s) => s.providerId == 'user_1').toList();
-        _isLoading = false;
-      });
+    try {
+      final services = await _serviceRepository.getAllServices();
+      final session = await _sessionService.getSession();
+      final providerId = session?.user?.id ?? 'user_1';
+      if (mounted) {
+        setState(() {
+          _myServices = services.where((s) => s.providerId == providerId).toList();
+          _isLoading = false;
+        });
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar servicios: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
     }
   }
 
@@ -91,8 +102,17 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
       },
     );
     if (confirmed == true && context.mounted) {
-      setState(() => _myServices.removeWhere((s) => s.id == service.id));
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('"${service.title}" eliminado')));
+      try {
+        await _serviceRepository.deleteService(service.id);
+        setState(() => _myServices.removeWhere((s) => s.id == service.id));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('"${service.title}" eliminado')));
+        }
+      } on Exception catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')));
+        }
+      }
     }
   }
 

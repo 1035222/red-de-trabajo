@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../models/user.dart';
-import '../repositories/mock_repositories.dart';
+import '../models/app_user.dart';
+import '../services/repository_provider.dart';
+import '../services/session_service.dart';
+import '../repositories/profile_repository.dart';
 import '../screens/my_services_screen.dart';
 import '../screens/portfolio_screen.dart';
 import '../screens/reviews_screen.dart';
@@ -17,17 +19,32 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final profileRepository = MockProfileRepository();
+    final profileRepository = RepositoryProvider.profileRepository;
+    final sessionService = SessionService();
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: FutureBuilder<User>(
-        future: profileRepository.getUserProfile('user_1'),
+      body: FutureBuilder<AppUser>(
+        future: _loadUserProfile(profileRepository, sessionService),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final user = snapshot.data ?? User(id: 'user_1', name: 'Usuario', email: '');
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+                  const SizedBox(height: 16),
+                  Text('Error al cargar el perfil', style: AppTextStyles.bodyMd),
+                  const SizedBox(height: 8),
+                  Text(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+                ],
+              ),
+            );
+          }
+          final user = snapshot.data ?? AppUser(id: 'user_1', name: 'Usuario', email: '');
 
           return Column(
             children: [
@@ -94,14 +111,14 @@ class ProfileScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 16),
                             Text(user.name, style: AppTextStyles.headlineMd),
-                            if (user.location.isNotEmpty) ...[
+                            if ((user.location ?? '').isNotEmpty) ...[
                               const SizedBox(height: 8),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(Icons.location_on_outlined, size: 16, color: AppColors.onSurfaceVariant),
                                   const SizedBox(width: 4),
-                                  Text(user.location, style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                                  Text(user.location ?? '', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
                                 ],
                               ),
                             ],
@@ -119,11 +136,11 @@ class ProfileScreen extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            _StatItem(label: 'Servicios', value: '${user.servicesCount}'),
+                            _StatItem(label: 'Servicios', value: '${user.servicesCount ?? 0}'),
                             Container(width: 1, height: 40, color: AppColors.outlineVariant.withValues(alpha: 0.5)),
-                            _StatItem(label: 'Reseñas', value: user.rating.toStringAsFixed(1)),
+                            _StatItem(label: 'Reseñas', value: (user.rating ?? 0).toStringAsFixed(1)),
                             Container(width: 1, height: 40, color: AppColors.outlineVariant.withValues(alpha: 0.5)),
-                            _StatItem(label: 'Calificación', value: user.rating.toStringAsFixed(1)),
+                            _StatItem(label: 'Calificación', value: (user.rating ?? 0).toStringAsFixed(1)),
                           ],
                         ),
                       ),
@@ -185,6 +202,12 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<AppUser> _loadUserProfile(ProfileRepository profileRepository, SessionService sessionService) async {
+  final session = await sessionService.getSession();
+  final userId = session?.user?.id ?? 'user_1';
+  return profileRepository.getUserProfile(userId);
 }
 
 class _StatItem extends StatelessWidget {

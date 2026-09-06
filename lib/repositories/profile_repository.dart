@@ -1,10 +1,10 @@
-import '../models/user.dart';
+import '../models/app_user.dart';
 import '../models/review.dart';
 import '../models/portfolio_item.dart';
 
 abstract class ProfileRepository {
-  Future<User> getUserProfile(String userId);
-  Future<User> updateUserProfile(User user);
+  Future<AppUser> getUserProfile(String userId);
+  Future<AppUser> updateUserProfile(AppUser user);
   Future<List<Review>> getUserReviews(String userId);
   Future<List<PortfolioItem>> getUserPortfolio(String userId);
 }

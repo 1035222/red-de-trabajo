@@ -3,7 +3,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/primary_button.dart';
 import '../models/service.dart';
-import '../repositories/mock_repositories.dart';
+import '../services/repository_provider.dart';
+import '../services/session_service.dart';
 
 class PublishScreen extends StatefulWidget {
   const PublishScreen({super.key});
@@ -20,7 +21,8 @@ class _PublishScreenState extends State<PublishScreen> {
   final _descriptionController = TextEditingController();
   bool _isLoading = false;
 
-  final _serviceRepository = MockServiceRepository();
+  final _serviceRepository = RepositoryProvider.serviceRepository;
+  final _sessionService = SessionService();
 
   @override
   void dispose() {
@@ -36,11 +38,13 @@ class _PublishScreenState extends State<PublishScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final session = await _sessionService.getSession();
+      final providerId = session?.user?.id ?? 'user_1';
       await _serviceRepository.createService(Service(
         id: '',
         title: _titleController.text.trim(),
         providerName: 'Usuario Actual',
-        providerId: 'user_1',
+        providerId: providerId,
         imageUrl: 'https://images.unsplash.com/photo-1581578731438-314f53f6f7f5?w=400',
         rating: 0.0,
         price: _priceController.text.trim(),
@@ -50,6 +54,10 @@ class _PublishScreenState extends State<PublishScreen> {
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Servicio publicado exitosamente')));
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al publicar: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

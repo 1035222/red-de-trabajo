@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "867847161323",
+    "project_id": "red-de-trabajo",
+    "storage_bucket": "red-de-trabajo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867847161323:android:d7ff295e75dc00b93085ae",
+        "android_client_info": {
+          "package_name": "com.example.red_de_trabajo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCP5tSKg5HjcaYh9qcd6z5aYgAE316Ywio"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

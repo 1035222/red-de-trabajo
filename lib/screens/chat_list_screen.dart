@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/message.dart';
-import '../repositories/mock_repositories.dart';
+import '../services/repository_provider.dart';
 import '../screens/chat_detail_screen.dart';
 import '../widgets/avatar.dart';
 
@@ -15,13 +15,27 @@ class ChatListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chatRepository = MockChatRepository();
+    final chatRepository = RepositoryProvider.chatRepository;
 
     final body = FutureBuilder<List<Message>>(
       future: chatRepository.getConversations(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+                const SizedBox(height: 16),
+                Text('Error al cargar mensajes', style: AppTextStyles.bodyMd),
+                const SizedBox(height: 8),
+                Text(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+              ],
+            ),
+          );
         }
         final messages = snapshot.data ?? [];
         if (messages.isEmpty) {
@@ -47,8 +61,10 @@ class ChatListScreen extends StatelessWidget {
                 color: AppColors.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               leading: RTAvatar(
                 imageUrl: message.avatarUrl,
                 size: 56,
@@ -72,7 +88,8 @@ class ChatListScreen extends StatelessWidget {
                   }
                 },
               ),
-            );
+            ),
+          );
           },
         );
       },

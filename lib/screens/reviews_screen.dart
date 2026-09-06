@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/review.dart';
-import '../repositories/mock_repositories.dart';
+import '../services/repository_provider.dart';
+import '../services/session_service.dart';
+import '../repositories/profile_repository.dart';
 import '../widgets/avatar.dart';
 
 class ReviewsScreen extends StatelessWidget {
@@ -10,7 +12,8 @@ class ReviewsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final profileRepository = MockProfileRepository();
+    final profileRepository = RepositoryProvider.profileRepository;
+    final sessionService = SessionService();
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -21,10 +24,24 @@ class ReviewsScreen extends StatelessWidget {
         title: Text('Reseñas', style: AppTextStyles.titleLg),
       ),
       body: FutureBuilder<List<Review>>(
-        future: profileRepository.getUserReviews('user_1'),
+        future: _loadUserReviews(profileRepository, sessionService),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+                  const SizedBox(height: 16),
+                  Text('Error al cargar reseñas', style: AppTextStyles.bodyMd),
+                  const SizedBox(height: 8),
+                  Text(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+                ],
+              ),
+            );
           }
           final reviews = snapshot.data ?? [];
           if (reviews.isEmpty) {
@@ -107,8 +124,15 @@ class ReviewsScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  String _formatDate(DateTime date) {
+Future<List<Review>> _loadUserReviews(ProfileRepository profileRepository, SessionService sessionService) async {
+  final session = await sessionService.getSession();
+  final userId = session?.user?.id ?? 'user_1';
+  return profileRepository.getUserReviews(userId);
+}
+
+String _formatDate(DateTime date) {
     final now = DateTime.now();
     final diff = now.difference(date);
     if (diff.inDays == 0) return 'Hoy';
@@ -116,4 +140,4 @@ class ReviewsScreen extends StatelessWidget {
     if (diff.inDays < 7) return 'Hace ${diff.inDays} días';
     return '${date.day}/${date.month}/${date.year}';
   }
-}
+

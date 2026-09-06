@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/primary_button.dart';
-import '../models/user.dart';
-import '../repositories/mock_repositories.dart';
+import '../models/app_user.dart';
+import '../services/repository_provider.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  final User user;
+  final AppUser user;
 
   const EditProfileScreen({super.key, required this.user});
 
@@ -21,7 +21,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final _locationController = TextEditingController(text: widget.user.location);
   bool _isLoading = false;
 
-  final _profileRepository = MockProfileRepository();
+  final _profileRepository = RepositoryProvider.profileRepository;
 
   @override
   void dispose() {
@@ -45,6 +45,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Perfil actualizado')));
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al actualizar perfil: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

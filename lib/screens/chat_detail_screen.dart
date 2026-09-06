@@ -5,7 +5,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/chat_message.dart';
 import '../models/message.dart';
-import '../repositories/mock_repositories.dart';
+import '../services/repository_provider.dart';
 import '../widgets/avatar.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -19,7 +19,7 @@ class ChatDetailScreen extends StatefulWidget {
 
 class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProviderStateMixin {
   final _messageController = TextEditingController();
-  final _chatRepository = MockChatRepository();
+  final _chatRepository = RepositoryProvider.chatRepository;
   final _scrollController = ScrollController();
   List<ChatMessage> _messages = [];
   Message? _conversation;
@@ -40,19 +40,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   }
 
   Future<void> _loadConversation() async {
-    final messages = await _chatRepository.getMessages(widget.conversationId);
-    final conversations = await _chatRepository.getConversations();
-    final conversation = conversations.firstWhere(
-      (c) => c.id == widget.conversationId,
-      orElse: () => Message(id: widget.conversationId, name: 'Chat', lastMessage: '', time: '', avatarUrl: '', unread: false),
-    );
-    if (mounted) {
-      setState(() {
-        _messages = messages;
-        _conversation = conversation;
-        _hasMessages = messages.isNotEmpty;
-      });
-      if (messages.isNotEmpty) _scrollToBottom();
+    try {
+      final messages = await _chatRepository.getMessages(widget.conversationId);
+      final conversations = await _chatRepository.getConversations();
+      final conversation = conversations.firstWhere(
+        (c) => c.id == widget.conversationId,
+        orElse: () => Message(id: widget.conversationId, name: 'Chat', lastMessage: '', time: '', avatarUrl: '', unread: false),
+      );
+      if (mounted) {
+        setState(() {
+          _messages = messages;
+          _conversation = conversation;
+          _hasMessages = messages.isNotEmpty;
+        });
+        if (messages.isNotEmpty) _scrollToBottom();
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        setState(() => _hasMessages = true);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar chat: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
     }
   }
 
@@ -60,10 +67,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
     setState(() => _hasMessages = true);
-    await _chatRepository.sendMessage(widget.conversationId, text);
-    _messageController.clear();
-    await _loadConversation();
-    _showTypingAndReply();
+    try {
+      await _chatRepository.sendMessage(widget.conversationId, text);
+      _messageController.clear();
+      await _loadConversation();
+      _showTypingAndReply();
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al enviar mensaje: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
+    }
   }
 
   void _showTypingAndReply() {
@@ -143,14 +156,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
 
   Future<void> _sendMockLocation() async {
     setState(() => _hasMessages = true);
-    await _chatRepository.sendLocation(
-      widget.conversationId,
-      19.432608 + (Random().nextDouble() - 0.5) * 0.1,
-      -99.133209 + (Random().nextDouble() - 0.5) * 0.1,
-      'Av. Reforma ${Random().nextInt(300) + 1}, Ciudad de México',
-    );
-    await _loadConversation();
-    _showTypingAndReply();
+    try {
+      await _chatRepository.sendLocation(
+        widget.conversationId,
+        19.432608 + (Random().nextDouble() - 0.5) * 0.1,
+        -99.133209 + (Random().nextDouble() - 0.5) * 0.1,
+        'Av. Reforma ${Random().nextInt(300) + 1}, Ciudad de México',
+      );
+      await _loadConversation();
+      _showTypingAndReply();
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al enviar ubicación: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
+    }
   }
 
   String _formatTime(DateTime time) {
@@ -497,9 +516,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
 
   Future<void> _sendMockAudio() async {
     setState(() => _hasMessages = true);
-    await _chatRepository.sendAudio(widget.conversationId, Random().nextInt(20) + 5, 'mock_audio_url');
-    await _loadConversation();
-    _showTypingAndReply();
+    try {
+      await _chatRepository.sendAudio(widget.conversationId, Random().nextInt(20) + 5, 'mock_audio_url');
+      await _loadConversation();
+      _showTypingAndReply();
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al enviar audio: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
+    }
   }
 
   @override

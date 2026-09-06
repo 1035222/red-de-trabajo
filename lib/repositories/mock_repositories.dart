@@ -1,6 +1,5 @@
-import '../models/user.dart';
+import '../models/app_user.dart';
 import '../models/service.dart';
-import '../models/category.dart';
 import '../models/message.dart';
 import '../models/chat_message.dart';
 import '../models/review.dart';
@@ -13,22 +12,17 @@ import 'notification_repository.dart';
 import 'profile_repository.dart';
 
 class MockAuthRepository implements AuthRepository {
-  User? _currentUser;
+  AppUser? _currentUser;
 
   @override
-  Future<User?> login(String email, String password) async {
+  Future<AppUser?> login(String email, String password) async {
     await Future.delayed(const Duration(milliseconds: 500));
     if (email.contains('@') && password.length >= 6) {
-      _currentUser = User(
+      _currentUser = AppUser(
         id: 'user_1',
         name: 'Carlos Méndez',
         email: email,
         avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
-        bio: 'Plomero profesional con 10 años de experiencia.',
-        location: 'Ciudad de México',
-        rating: 4.8,
-        servicesCount: 12,
-        verified: true,
       );
       return _currentUser;
     }
@@ -36,15 +30,13 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<User> register(String name, String email, String password) async {
+  Future<AppUser> register(String name, String email, String password) async {
     await Future.delayed(const Duration(milliseconds: 500));
-    _currentUser = User(
+    _currentUser = AppUser(
       id: 'user_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
       email: email,
       avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
-      bio: '',
-      location: '',
     );
     return _currentUser!;
   }
@@ -56,7 +48,7 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<User?> getCurrentUser() async {
+  Future<AppUser?> getCurrentUser() async {
     await Future.delayed(const Duration(milliseconds: 200));
     return _currentUser;
   }
@@ -144,15 +136,6 @@ class MockServiceRepository implements ServiceRepository {
     ),
   ];
 
-  final List<Category> _categories = [
-    Category(name: 'Plomería', icon: 'plumbing', color: '#004AC6'),
-    Category(name: 'Electricidad', icon: 'electrical_services', color: '#006A61'),
-    Category(name: 'Limpieza', icon: 'cleaning_services', color: '#2563EB'),
-    Category(name: 'Pintura', icon: 'format_paint', color: '#B4C5FF'),
-    Category(name: 'Carpintería', icon: 'carpenter', color: '#86F2E4'),
-    Category(name: 'Jardinería', icon: 'yard', color: '#D3E4FE'),
-  ];
-
   @override
   Future<List<Service>> getFeaturedServices() async {
     await Future.delayed(const Duration(milliseconds: 300));
@@ -207,9 +190,20 @@ class MockServiceRepository implements ServiceRepository {
   }
 
   @override
-  Future<List<Category>> getCategories() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return List.unmodifiable(_categories);
+  Future<Service> updateService(Service service) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    final index = _services.indexWhere((s) => s.id == service.id);
+    if (index != -1) {
+      _services[index] = service;
+      return _services[index];
+    }
+    throw Exception('Servicio no encontrado');
+  }
+
+  @override
+  Future<void> deleteService(String id) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    _services.removeWhere((s) => s.id == id);
   }
 }
 
@@ -391,16 +385,11 @@ class MockNotificationRepository implements NotificationRepository {
 }
 
 class MockProfileRepository implements ProfileRepository {
-  User _currentUser = User(
+  AppUser _currentUser = AppUser(
     id: 'user_1',
     name: 'Carlos Méndez',
     email: 'carlos@example.com',
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
-    bio: 'Plomero profesional con 10 años de experiencia en reparaciones e instalaciones.',
-    location: 'Ciudad de México',
-    rating: 4.8,
-    servicesCount: 12,
-    verified: true,
   );
 
   final List<Review> _reviews = [
@@ -440,14 +429,14 @@ class MockProfileRepository implements ProfileRepository {
   ];
 
   @override
-  Future<User> getUserProfile(String userId) async {
+  Future<AppUser> getUserProfile(String userId) async {
     await Future.delayed(const Duration(milliseconds: 300));
     if (userId == _currentUser.id) return _currentUser;
-    return _currentUser.copyWith(id: userId);
+    return _currentUser.copyWith(name: _currentUser.name);
   }
 
   @override
-  Future<User> updateUserProfile(User user) async {
+  Future<AppUser> updateUserProfile(AppUser user) async {
     await Future.delayed(const Duration(milliseconds: 500));
     _currentUser = user;
     return _currentUser;
