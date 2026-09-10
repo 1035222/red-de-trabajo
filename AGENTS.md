@@ -75,7 +75,7 @@ Este flujo ya funciona en producción y se ha dañado repetidamente al hacer cam
 
 ## Reglas de commits / PR
 
-- Un commit por tarea atómica (ver `.specify/tasks/`), mensaje en español, formato: `tipo: descripción breve` (ej. `fix: corrige URL base en web`).
+- Un commit por tarea atómica (ver `.specify/tasks.md`), mensaje en español, formato: `tipo: descripción breve` (ej. `fix: corrige URL base en web`).
 - No mezclar cambios de auth con cambios de otras funcionalidades en el mismo commit.
 
 ## Dónde está la fuente de verdad de producto/arquitectura
