@@ -24,13 +24,14 @@ class ProfileScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: FutureBuilder<AppUser>(
+      body: FutureBuilder<AppUser?>(
         future: _loadUserProfile(profileRepository, sessionService),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
+          final user = snapshot.data;
+          if (snapshot.hasError && user == null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -44,7 +45,22 @@ class ProfileScreen extends StatelessWidget {
               ),
             );
           }
-          final user = snapshot.data ?? AppUser(id: 'user_1', name: 'Usuario', email: '');
+          if (user == null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.login_rounded, size: 48, color: AppColors.onSurfaceVariant),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No has iniciado sesión',
+                    style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          }
 
           return Column(
             children: [
@@ -204,9 +220,12 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-Future<AppUser> _loadUserProfile(ProfileRepository profileRepository, SessionService sessionService) async {
+Future<AppUser?> _loadUserProfile(ProfileRepository profileRepository, SessionService sessionService) async {
   final session = await sessionService.getSession();
-  final userId = session?.user?.id ?? 'user_1';
+  final userId = session?.user?.id;
+  if (userId == null || userId.isEmpty) {
+    return null;
+  }
   return profileRepository.getUserProfile(userId);
 }
 
