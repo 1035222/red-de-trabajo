@@ -54,6 +54,8 @@ Este flujo ya funciona en producción y se ha dañado repetidamente al hacer cam
   - `firebase_core` ^4.14.0 (init Firebase)
   - `cached_network_image` ^3.4.1 (imágenes)
   - `google_fonts` ^6.2.1 (tipografía)
+  - `image_picker` ^1.0.0 (selección de imágenes desde galería/archivos)
+  - `firebase_storage` ^13.5.0 (subida de imágenes al bucket de Firebase Storage)
 - No se introducen gestores de estado (como `provider`, `riverpod`, `bloc`) ni paquetes nuevos sin actualizar esta constitución primero.
 - `ApiService` separa errores de red (`SocketException`, `TimeoutException`) de errores HTTP: los repositorios inspeccionan `statusCode` y `response.body` para mensajes de error detallados.
 - El proyecto usa Material Design (`uses-material-design: true`).

@@ -25,11 +25,12 @@ class ApiProfileRepository implements ProfileRepository {
       'name': user.name,
       'bio': user.bio,
       'location': user.location,
+      'avatarUrl': user.avatarUrl,
     });
     if (response.statusCode == 200) {
       return AppUser.fromJson(jsonDecode(response.body));
     }
-    throw Exception('Error al actualizar perfil');
+     throw Exception('Error al actualizar perfil (${response.statusCode}): ${response.body}');
   }
 
   @override
