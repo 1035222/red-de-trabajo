@@ -1,10 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import 'session_service.dart';
 
 class ApiService {
-  static const String baseUrl = '${ApiConfig.baseUrl}/api';
+  static final String baseUrl = '${ApiConfig.baseUrl}/api';
   final SessionService _sessionService = SessionService();
 
   Future<http.Response> get(String path, {Map<String, String>? queryParams}) async {
@@ -31,14 +33,21 @@ class ApiService {
     return _request(() => http.delete(uri, headers: _headers(token)));
   }
 
+  /// Envía la petición y devuelve la respuesta sin lanzar excepción para
+  /// errores HTTP (statusCode >= 400). Esto permite a los repositorios
+  /// inspeccionar el código de estado y el cuerpo del error con detalle.
+  /// Solo lanza excepción para errores de red/conexión real (SocketException,
+  /// TimeoutException, etc.).
   Future<http.Response> _request(Future<http.Response> Function() request) async {
     try {
       final response = await request().timeout(const Duration(seconds: 15));
-      if (response.statusCode >= 400) {
-        throw Exception('HTTP ${response.statusCode}: ${response.body}');
-      }
       return response;
+    } on SocketException {
+      throw Exception('Error de conexión: No se pudo conectar al servidor. Verifica que el backend esté corriendo y la URL sea correcta.');
+    } on TimeoutException {
+      throw Exception('Error de conexión: La solicitud excedió el tiempo de espera (15s).');
     } on Exception catch (e) {
+      // Otro error de red no clasificado
       throw Exception('Error de conexión: $e');
     }
   }

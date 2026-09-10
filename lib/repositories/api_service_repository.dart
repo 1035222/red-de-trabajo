@@ -15,7 +15,7 @@ class ApiServiceRepository implements ServiceRepository {
       final List data = jsonDecode(response.body);
       return data.map((json) => Service.fromJson(json)).where((s) => s.featured).toList();
     }
-    throw Exception('Error al obtener servicios destacados');
+    throw Exception('Error al obtener servicios destacados (${response.statusCode}): ${response.body}');
   }
 
   @override
@@ -25,7 +25,7 @@ class ApiServiceRepository implements ServiceRepository {
       final List data = jsonDecode(response.body);
       return data.map((json) => Service.fromJson(json)).toList();
     }
-    throw Exception('Error al obtener servicios');
+    throw Exception('Error al obtener servicios (${response.statusCode}): ${response.body}');
   }
 
   @override
@@ -38,7 +38,7 @@ class ApiServiceRepository implements ServiceRepository {
       final List data = jsonDecode(response.body);
       return data.map((json) => Service.fromJson(json)).toList();
     }
-    throw Exception('Error al buscar servicios');
+    throw Exception('Error al buscar servicios (${response.statusCode}): ${response.body}');
   }
 
   @override
@@ -48,7 +48,7 @@ class ApiServiceRepository implements ServiceRepository {
       return Service.fromJson(jsonDecode(response.body));
     }
     if (response.statusCode == 404) return null;
-    throw Exception('Error al obtener servicio');
+    throw Exception('Error al obtener servicio (${response.statusCode}): ${response.body}');
   }
 
   @override
@@ -63,7 +63,7 @@ class ApiServiceRepository implements ServiceRepository {
     if (response.statusCode == 201) {
       return Service.fromJson(jsonDecode(response.body));
     }
-    throw Exception('Error al crear servicio');
+    throw Exception('Error al crear servicio (${response.statusCode}): ${response.body}');
   }
 
   @override
@@ -79,14 +79,14 @@ class ApiServiceRepository implements ServiceRepository {
     if (response.statusCode == 200) {
       return Service.fromJson(jsonDecode(response.body));
     }
-    throw Exception('Error al actualizar servicio');
+    throw Exception('Error al actualizar servicio (${response.statusCode}): ${response.body}');
   }
 
   @override
   Future<void> deleteService(String id) async {
     final response = await _api.delete('/services/$id');
     if (response.statusCode != 204) {
-      throw Exception('Error al eliminar servicio');
+      throw Exception('Error al eliminar servicio (${response.statusCode}): ${response.body}');
     }
   }
 }
