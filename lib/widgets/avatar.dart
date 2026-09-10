@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/app_colors.dart';
 
 class RTAvatar extends StatelessWidget {
@@ -15,6 +16,8 @@ class RTAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
+
     return Container(
       width: size,
       height: size,
@@ -26,28 +29,37 @@ class RTAvatar extends StatelessWidget {
           colors: [AppColors.primary.withValues(alpha: 0.15), AppColors.primaryContainer.withValues(alpha: 0.08)],
         ),
       ),
-      child: imageUrl != null && imageUrl!.isNotEmpty
-          ? CircleAvatar(
-              radius: size / 2,
-              backgroundImage: NetworkImage(imageUrl!),
-              onBackgroundImageError: (exception, stackTrace) {},
-              child: Container(
-                color: AppColors.surfaceContainerHighest,
-                child: Icon(Icons.person_rounded, size: size * 0.5, color: AppColors.onSurfaceVariant),
-              ),
-            )
-          : CircleAvatar(
-              radius: size / 2,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-              child: Text(
-                fallbackInitial,
-                style: TextStyle(
-                  fontSize: size * 0.4,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size / 2),
+        child: hasImage
+            ? CachedNetworkImage(
+                imageUrl: imageUrl!,
+                placeholder: (context, url) => Container(
+                  color: AppColors.surfaceContainerLowest,
+                  child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                 ),
-              ),
-            ),
+                errorWidget: (context, url, error) => _buildFallback(),
+                fit: BoxFit.cover,
+                width: size,
+                height: size,
+              )
+            : _buildFallback(),
+      ),
+    );
+  }
+
+  Widget _buildFallback() {
+    return CircleAvatar(
+      radius: size / 2,
+      backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+      child: Text(
+        fallbackInitial,
+        style: TextStyle(
+          fontSize: size * 0.4,
+          fontWeight: FontWeight.w600,
+          color: AppColors.primary,
+        ),
+      ),
     );
   }
 }
