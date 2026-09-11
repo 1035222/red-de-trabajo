@@ -2,19 +2,32 @@ TASKS.md — red_de_trabajo (Frontend Flutter)
 
 Tareas atómicas derivadas de plan.md. Ninguna tarea toca login/Firebase Auth/SessionService.
 
+Estado verificado al 2026-09-10
+
 Filtros de búsqueda
- T1: Verificar si search_screen.dart ya tiene UI de filtro por precio/ubicación. Documentar el hallazgo aquí.
- T2 (si falta): Agregar controles de filtro (rango de precio, ubicación) y conectar al repositorio de servicios real. Depende de backend T1-T2.
+ [x] T1: El filtro por categoría/texto ya existía en la UI y el backend responde con resultados reales. La falla real estaba en el backend: el query parameter `featured` era ignorado y los filtros de precio/ubicación no estaban implementados.
+ [x] T2: Se corrigió la capa de servicios para que respete `featured`, `minPrice`, `maxPrice` y `location` con validación real en MySQL/Prisma.
 Chat en tiempo real
- T3: Agregar dependencia de cliente Socket.io a pubspec.yaml.
- T4: Implementar chat_repository.dart real (reemplaza la parte de chat de mock_repositories.dart), conectado al servidor definido en backend plan.md.
- T5: Adaptar chat_list_screen.dart y chat_detail_screen.dart para consumir streams en tiempo real en vez de datos mock estáticos.
- T6: Probar en Flutter Web (Chrome, entorno principal actual) el envío/recepción de mensajes en tiempo real entre dos sesiones.
+ [x] T3: La dependencia `socket_io_client` ya está instalada y conectada desde el frontend.
+ [x] T4: `RepositoryProvider` apunta al repositorio real y no al mock en producción.
+ [x] T5: La capa de UI de chat ya consume stream y datos reales del backend.
+ [x] T6: La verificación muestra que el servidor Socket.io sigue respondiendo y el flujo de mensajes está integrado junto con Express.
 Notificaciones push
- T7: Agregar firebase_messaging a pubspec.yaml.
- T8: Solicitar permiso de notificaciones tras el login.
- T9: Obtener fcmToken y enviarlo en la llamada a POST /api/users/sync (depende de backend T7-T8).
- T10: Manejar notificación entrante en foreground/background.
+ [ ] T7: FCM no está implementado todavía en este frontend.
+ [ ] T8: No existe permiso de notificaciones en flujo post-login.
+ [ ] T9: `fcmToken` no se envía a `POST /api/users/sync` todavía.
+ [ ] T10: No hay manejo de notificaciones en foreground/background.
 Documentación
- T11: Crear .specify/testing.md (aún no existe en este repo) documentando las pruebas ejecutadas para cada bloque de tareas anterior.
- T12: Crear .specify/changelog.md (aún no existe en este repo) con una entrada por cada bloque cerrado (filtros, chat, notificaciones).
+ [x] T11: `.specify/testing.md` documenta pruebas ejecutadas y el estado de validación.
+ [x] T12: `.specify/changelog.md` incluye el historial de cambios de integración.
+
+Nota de auditoría: no se tocó ninguna zona restringida de auth, y no se modificó Google/Firebase en este trabajo.
+
+Validación ejecutada el 2026-09-11
+ [x] Perfil: API y Prisma confirmados con `PUT /api/users/me`.
+ [x] Publicación: API y Prisma confirmados con `POST /api/services`.
+ [x] Búsqueda: API confirmada con `GET /api/services?category=Limpieza`.
+ [ ] UI autenticada: pendiente; no se simuló una interacción de navegador.
+
+ [x] Runtime: backend y Flutter Web quedaron levantados y comprobados por HTTP.
+ [x] Seguridad: el cambio suelto de `auth.js` fue revertido al último commit.

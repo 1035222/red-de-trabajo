@@ -4,6 +4,13 @@ Una entrada por cada bloque cerrado. Formato: fecha, tipo, descripción.
 
 ## 2026-09-10 — fix: corrige bugs de perfil (Parte 1)
 
+## 2026-09-10 — validación: perfil, publicación y búsqueda
+
+- Se confirmó por API y Prisma la persistencia del perfil de prueba y de un servicio publicado.
+- Se confirmó que la búsqueda por categoría devuelve el servicio persistido.
+- Se retiró el bypass temporal de `auth.js`; no se modificó el flujo Google/Firebase.
+- La prueba de UI autenticada requiere una sesión Firebase válida disponible en el entorno.
+
 ### Frontend
 - **Avatar overlap**: El widget `RTAvatar` (`lib/widgets/avatar.dart`) mostraba un `CircleAvatar` con un `child` (Container coloreado + ícono de persona) que tapaba la imagen de fondo. Reemplazado por `CachedNetworkImage` con placeholder y manejo de errores. El avatar ahora se muestra sin superposición.
 - **Image picker para avatar**: Agregado `image_picker` ^1.0.0 y `firebase_storage` ^13.5.0 a `pubspec.yaml` (constitución actualizada). `EditProfileScreen` ahora muestra preview de avatar con botón de cámara; al seleccionar una imagen se sube a Firebase Storage y se obtiene la URL de descarga. El campo de email se marcó como `readOnly` (no se persiste vía `PUT /users/me`).

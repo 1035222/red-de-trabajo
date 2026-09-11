@@ -41,3 +41,15 @@ TC-07	Envío de mensaje en chat	Alta	Bloqueado — chat aún no implementado
 TC-08	Calificación de servicio	Media	Pendiente de documentar
 TC-09	Edición de perfil	Media	✅ Resuelto — ver detalle arriba
 TC-10	Navegación entre pantallas	Alta	Pendiente de documentar
+
+## Evidencia ejecutada por API (2026-09-11)
+
+- El backend devolvió `200` para `PUT /api/users/me` y Prisma confirmó el perfil persistido.
+- El backend devolvió `201` para `POST /api/services` y Prisma confirmó el servicio con descripción, precio, categoría e imagen.
+- El backend devolvió `200` para `GET /api/services?category=Limpieza` y la respuesta incluyó el servicio creado.
+- No se marca como validación UI: esta sesión no dispone de automatización ni inspección remota del Chrome que permita ejecutar login, editar perfil, publicar y observar las pantallas.
+
+## Estado del runtime (2026-09-10)
+
+- Flutter Web responde en `localhost:5000` y el backend responde en `localhost:3000`.
+- El bypass temporal de `auth.js` fue retirado por seguridad; los guardados protegidos requieren un token Firebase real.
