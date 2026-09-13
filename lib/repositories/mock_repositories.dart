@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../models/app_user.dart';
 import '../models/service.dart';
 import '../models/message.dart';
@@ -36,7 +38,8 @@ class MockAuthRepository implements AuthRepository {
       id: 'user_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
       email: email,
-      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
+      avatarUrl:
+          'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200',
     );
     return _currentUser!;
   }
@@ -61,7 +64,8 @@ class MockServiceRepository implements ServiceRepository {
       title: 'Reparación de tuberías',
       providerName: 'Carlos Méndez',
       providerId: 'user_1',
-      imageUrl: 'https://images.unsplash.com/photo-1581578731438-314f53f6f7f5?w=400',
+      imageUrl:
+          'https://images.unsplash.com/photo-1581578731438-314f53f6f7f5?w=400',
       rating: 4.8,
       price: '\$35/hr',
       description: 'Servicio profesional de plomería para reparaciones, instalaciones y mantenimiento.',
@@ -74,7 +78,8 @@ class MockServiceRepository implements ServiceRepository {
       title: 'Instalación eléctrica',
       providerName: 'Ana Ruiz',
       providerId: 'user_2',
-      imageUrl: 'https://images.unsplash.com/photo-1621905251189-08b45d6a2692?w=400',
+      imageUrl:
+          'https://images.unsplash.com/photo-1621905251189-08b45d6a2692?w=400',
       rating: 4.9,
       price: '\$45/hr',
       description: 'Electricista certificada para proyectos residenciales y comerciales.',
@@ -87,10 +92,12 @@ class MockServiceRepository implements ServiceRepository {
       title: 'Limpieza profunda',
       providerName: 'María Torres',
       providerId: 'user_3',
-      imageUrl: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=400',
+      imageUrl:
+          'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=400',
       rating: 4.7,
       price: '\$28/hr',
-      description: 'Limpieza integral de hogares y oficinas con productos ecológicos.',
+      description:
+          'Limpieza integral de hogares y oficinas con productos ecológicos.',
       category: 'Limpieza',
       reviewsCount: 31,
       featured: false,
@@ -100,10 +107,12 @@ class MockServiceRepository implements ServiceRepository {
       title: 'Pintura interior',
       providerName: 'Luis García',
       providerId: 'user_4',
-      imageUrl: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400',
+      imageUrl:
+          'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400',
       rating: 4.6,
       price: '\$30/hr',
-      description: 'Pintura profesional para interiores con acabados de alta calidad.',
+      description:
+          'Pintura profesional para interiores con acabados de alta calidad.',
       category: 'Pintura',
       reviewsCount: 15,
       featured: false,
@@ -113,7 +122,8 @@ class MockServiceRepository implements ServiceRepository {
       title: 'Muebles a medida',
       providerName: 'Roberto Díaz',
       providerId: 'user_5',
-      imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400',
+      imageUrl:
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400',
       rating: 4.9,
       price: '\$120',
       description: 'Diseño y fabricación de muebles personalizados en madera.',
@@ -126,10 +136,12 @@ class MockServiceRepository implements ServiceRepository {
       title: 'Diseño de jardines',
       providerName: 'Elena Vega',
       providerId: 'user_6',
-      imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400',
+      imageUrl:
+          'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400',
       rating: 4.5,
       price: '\$50/hr',
-      description: 'Diseño, mantenimiento y paisajismo de jardines residenciales.',
+      description:
+          'Diseño, mantenimiento y paisajismo de jardines residenciales.',
       category: 'Jardinería',
       reviewsCount: 9,
       featured: false,
@@ -149,13 +161,27 @@ class MockServiceRepository implements ServiceRepository {
   }
 
   @override
-  Future<List<Service>> searchServices(String query, String category) async {
+  Future<List<Service>> searchServices(
+    String query,
+    String category, {
+    double? minPrice,
+    double? maxPrice,
+    String? location,
+  }) async {
     await Future.delayed(const Duration(milliseconds: 400));
     return _services.where((s) {
-      final matchesQuery = s.title.toLowerCase().contains(query.toLowerCase()) ||
+      final matchesQuery =
+          s.title.toLowerCase().contains(query.toLowerCase()) ||
           s.providerName.toLowerCase().contains(query.toLowerCase());
       final matchesCategory = category == 'Todos' || s.category == category;
-      return matchesQuery && matchesCategory;
+      final servicePrice =
+          double.tryParse(s.price.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
+      final matchesMinPrice = minPrice == null || servicePrice >= minPrice;
+      final matchesMaxPrice = maxPrice == null || servicePrice <= maxPrice;
+      return matchesQuery &&
+          matchesCategory &&
+          matchesMinPrice &&
+          matchesMaxPrice;
     }).toList();
   }
 
@@ -214,7 +240,8 @@ class MockChatRepository implements ChatRepository {
       name: 'Carlos Méndez',
       lastMessage: '¿Podemos coordinar para mañana?',
       time: '10:30',
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
+      avatarUrl:
+          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
       unread: true,
     ),
     Message(
@@ -222,7 +249,8 @@ class MockChatRepository implements ChatRepository {
       name: 'Ana Ruiz',
       lastMessage: 'Gracias por la recomendación',
       time: 'Ayer',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
+      avatarUrl:
+          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
       unread: false,
     ),
     Message(
@@ -230,17 +258,42 @@ class MockChatRepository implements ChatRepository {
       name: 'María Torres',
       lastMessage: 'El presupuesto está listo',
       time: 'Lun',
-      avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100',
+      avatarUrl:
+          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100',
       unread: true,
     ),
   ];
 
   final Map<String, List<ChatMessage>> _chatHistory = {
     '1': [
-      ChatMessage(id: '1', text: 'Hola, vi tu servicio de plomería', type: MessageType.text, isMe: true, time: DateTime(2026, 8, 29, 9, 0)),
-      ChatMessage(id: '2', text: '¡Hola! Sí, ¿en qué puedo ayudarte?', type: MessageType.text, isMe: false, time: DateTime(2026, 8, 29, 9, 1)),
-      ChatMessage(id: '3', text: 'Necesito reparar una tubería en la cocina', type: MessageType.text, isMe: true, time: DateTime(2026, 8, 29, 9, 2)),
-      ChatMessage(id: '4', text: 'Perfecto, ¿podemos coordinar para mañana?', type: MessageType.text, isMe: false, time: DateTime(2026, 8, 29, 9, 3)),
+      ChatMessage(
+        id: '1',
+        text: 'Hola, vi tu servicio de plomería',
+        type: MessageType.text,
+        isMe: true,
+        time: DateTime(2026, 8, 29, 9, 0),
+      ),
+      ChatMessage(
+        id: '2',
+        text: '¡Hola! Sí, ¿en qué puedo ayudarte?',
+        type: MessageType.text,
+        isMe: false,
+        time: DateTime(2026, 8, 29, 9, 1),
+      ),
+      ChatMessage(
+        id: '3',
+        text: 'Necesito reparar una tubería en la cocina',
+        type: MessageType.text,
+        isMe: true,
+        time: DateTime(2026, 8, 29, 9, 2),
+      ),
+      ChatMessage(
+        id: '4',
+        text: 'Perfecto, ¿podemos coordinar para mañana?',
+        type: MessageType.text,
+        isMe: false,
+        time: DateTime(2026, 8, 29, 9, 3),
+      ),
     ],
   };
 
@@ -267,7 +320,9 @@ class MockChatRepository implements ChatRepository {
       type: MessageType.text,
     );
     _chatHistory.putIfAbsent(conversationId, () => []).add(message);
-    final conversation = _conversations.firstWhere((c) => c.id == conversationId);
+    final conversation = _conversations.firstWhere(
+      (c) => c.id == conversationId,
+    );
     final updated = Message(
       id: conversation.id,
       name: conversation.name,
@@ -282,7 +337,12 @@ class MockChatRepository implements ChatRepository {
   }
 
   @override
-  Future<ChatMessage> sendLocation(String conversationId, double latitude, double longitude, String address) async {
+  Future<ChatMessage> sendLocation(
+    String conversationId,
+    double latitude,
+    double longitude,
+    String address,
+  ) async {
     await Future.delayed(const Duration(milliseconds: 250));
     final message = ChatMessage(
       id: 'loc_${DateTime.now().millisecondsSinceEpoch}',
@@ -295,7 +355,9 @@ class MockChatRepository implements ChatRepository {
       address: address,
     );
     _chatHistory.putIfAbsent(conversationId, () => []).add(message);
-    final conversation = _conversations.firstWhere((c) => c.id == conversationId);
+    final conversation = _conversations.firstWhere(
+      (c) => c.id == conversationId,
+    );
     final updated = Message(
       id: conversation.id,
       name: conversation.name,
@@ -310,7 +372,11 @@ class MockChatRepository implements ChatRepository {
   }
 
   @override
-  Future<ChatMessage> sendAudio(String conversationId, int durationSeconds, String audioUrl) async {
+  Future<ChatMessage> sendAudio(
+    String conversationId,
+    int durationSeconds,
+    String audioUrl,
+  ) async {
     await Future.delayed(const Duration(milliseconds: 250));
     final message = ChatMessage(
       id: 'audio_${DateTime.now().millisecondsSinceEpoch}',
@@ -322,7 +388,9 @@ class MockChatRepository implements ChatRepository {
       audioUrl: audioUrl,
     );
     _chatHistory.putIfAbsent(conversationId, () => []).add(message);
-    final conversation = _conversations.firstWhere((c) => c.id == conversationId);
+    final conversation = _conversations.firstWhere(
+      (c) => c.id == conversationId,
+    );
     final updated = Message(
       id: conversation.id,
       name: conversation.name,
@@ -335,6 +403,20 @@ class MockChatRepository implements ChatRepository {
     _conversations.insert(0, updated);
     return message;
   }
+
+  @override
+  Stream<ChatMessage> watchMessages(String conversationId) {
+    return const Stream.empty();
+  }
+
+  @override
+  void joinConversation(String conversationId) {}
+
+  @override
+  void leaveConversation(String conversationId) {}
+
+  @override
+  void dispose() {}
 }
 
 class MockNotificationRepository implements NotificationRepository {
@@ -389,14 +471,16 @@ class MockProfileRepository implements ProfileRepository {
     id: 'user_1',
     name: 'Carlos Méndez',
     email: 'carlos@example.com',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
+    avatarUrl:
+        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
   );
 
   final List<Review> _reviews = [
     Review(
       id: '1',
       userName: 'Juan Pérez',
-      userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
+      userAvatar:
+          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
       rating: 5,
       comment: 'Excelente trabajo, muy profesional y puntual.',
       date: DateTime(2026, 8, 20),
@@ -404,7 +488,8 @@ class MockProfileRepository implements ProfileRepository {
     Review(
       id: '2',
       userName: 'Laura Gómez',
-      userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
+      userAvatar:
+          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
       rating: 4,
       comment: 'Buen servicio, aunque tardó un poco más de lo acordado.',
       date: DateTime(2026, 8, 15),
@@ -412,7 +497,8 @@ class MockProfileRepository implements ProfileRepository {
     Review(
       id: '3',
       userName: 'Pedro Sánchez',
-      userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
+      userAvatar:
+          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
       rating: 5,
       comment: 'Recomendado 100%, volvería a contratarlo.',
       date: DateTime(2026, 8, 10),
@@ -420,12 +506,42 @@ class MockProfileRepository implements ProfileRepository {
   ];
 
   final List<PortfolioItem> _portfolio = [
-    PortfolioItem(id: '1', imageUrl: 'https://images.unsplash.com/photo-1581578731438-314f53f6f7f5?w=400', title: 'Reparación cocina'),
-    PortfolioItem(id: '2', imageUrl: 'https://images.unsplash.com/photo-1621905251189-08b45d6a2692?w=400', title: 'Instalación eléctrica'),
-    PortfolioItem(id: '3', imageUrl: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=400', title: 'Limpieza oficina'),
-    PortfolioItem(id: '4', imageUrl: 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400', title: 'Pintura sala'),
-    PortfolioItem(id: '5', imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400', title: 'Mueble comedor'),
-    PortfolioItem(id: '6', imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400', title: 'Jardín residencial'),
+    PortfolioItem(
+      id: '1',
+      imageUrl:
+          'https://images.unsplash.com/photo-1581578731438-314f53f6f7f5?w=400',
+      title: 'Reparación cocina',
+    ),
+    PortfolioItem(
+      id: '2',
+      imageUrl:
+          'https://images.unsplash.com/photo-1621905251189-08b45d6a2692?w=400',
+      title: 'Instalación eléctrica',
+    ),
+    PortfolioItem(
+      id: '3',
+      imageUrl:
+          'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=400',
+      title: 'Limpieza oficina',
+    ),
+    PortfolioItem(
+      id: '4',
+      imageUrl:
+          'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=400',
+      title: 'Pintura sala',
+    ),
+    PortfolioItem(
+      id: '5',
+      imageUrl:
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400',
+      title: 'Mueble comedor',
+    ),
+    PortfolioItem(
+      id: '6',
+      imageUrl:
+          'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400',
+      title: 'Jardín residencial',
+    ),
   ];
 
   @override

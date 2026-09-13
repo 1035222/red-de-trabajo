@@ -56,6 +56,7 @@ Este flujo ya funciona en producción y se ha dañado repetidamente al hacer cam
   - `google_fonts` ^6.2.1 (tipografía)
   - `image_picker` ^1.0.0 (selección de imágenes desde galería/archivos)
   - `firebase_storage` ^13.5.0 (subida de imágenes al bucket de Firebase Storage)
+  - `socket_io_client` ^3.1.0 (chat en tiempo real con Socket.io)
 - No se introducen gestores de estado (como `provider`, `riverpod`, `bloc`) ni paquetes nuevos sin actualizar esta constitución primero.
 - `ApiService` separa errores de red (`SocketException`, `TimeoutException`) de errores HTTP: los repositorios inspeccionan `statusCode` y `response.body` para mensajes de error detallados.
 - El proyecto usa Material Design (`uses-material-design: true`).

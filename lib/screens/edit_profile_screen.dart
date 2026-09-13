@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/avatar.dart';
 import '../models/app_user.dart';
 import '../services/repository_provider.dart';
+import '../services/api_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final AppUser user;
@@ -29,7 +29,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   final _profileRepository = RepositoryProvider.profileRepository;
   final _imagePicker = ImagePicker();
-  final _storage = FirebaseStorage.instance;
+  final _api = ApiService();
 
   @override
   void dispose() {
@@ -48,14 +48,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() => _isUploadingImage = true);
 
       final bytes = await pickedFile.readAsBytes();
-      final fileName = 'avatars/${widget.user.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = _storage.ref().child(fileName);
+      final originalName = pickedFile.name;
+      final extension = originalName.contains('.') ? originalName.split('.').last.toLowerCase() : 'jpg';
+      final downloadUrl = await _api.uploadImage(
+        bytes: bytes,
+        filename: 'avatar_${widget.user.id}_${DateTime.now().millisecondsSinceEpoch}.$extension',
+      );
 
-      final uploadTask = ref.putData(bytes);
-      final snapshot = await uploadTask;
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-
-      setState(() => _avatarUrl = downloadUrl);
+      if (mounted) setState(() => _avatarUrl = downloadUrl);
     } on Exception catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -76,7 +76,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         email: _emailController.text.trim(),
         bio: _bioController.text.trim(),
         location: _locationController.text.trim(),
-        avatarUrl: _avatarUrl,
+        avatarUrl: _avatarUrl ?? widget.user.avatarUrl,
       );
       await _profileRepository.updateUserProfile(updated);
       if (!mounted) return;

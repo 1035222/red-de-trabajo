@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/app_colors.dart';
 
 class RTAvatar extends StatelessWidget {
@@ -32,13 +31,13 @@ class RTAvatar extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(size / 2),
         child: hasImage
-            ? CachedNetworkImage(
-                imageUrl: imageUrl!,
-                placeholder: (context, url) => Container(
+            ? Image.network(
+              imageUrl!,
+                loadingBuilder: (context, child, progress) => progress == null ? child : Container(
                   color: AppColors.surfaceContainerLowest,
                   child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                 ),
-                errorWidget: (context, url, error) => _buildFallback(),
+                errorBuilder: (context, error, stackTrace) => _buildFallback(),
                 fit: BoxFit.cover,
                 width: size,
                 height: size,

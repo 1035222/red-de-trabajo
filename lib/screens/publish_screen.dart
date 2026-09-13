@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/primary_button.dart';
 import '../models/service.dart';
 import '../services/repository_provider.dart';
 import '../services/session_service.dart';
+import '../services/api_service.dart';
 
 class PublishScreen extends StatefulWidget {
   const PublishScreen({super.key});
@@ -20,9 +22,24 @@ class _PublishScreenState extends State<PublishScreen> {
   final _priceController = TextEditingController();
   final _descriptionController = TextEditingController();
   bool _isLoading = false;
+  bool _isUploadingImage = false;
+  String? _imageUrl;
+
+  static const _categories = [
+    'Plomería',
+    'Electricidad',
+    'Limpieza',
+    'Pintura',
+    'Carpintería',
+    'Jardinería',
+    'Diseño',
+    'Fotografía',
+  ];
 
   final _serviceRepository = RepositoryProvider.serviceRepository;
   final _sessionService = SessionService();
+  final _imagePicker = ImagePicker();
+  final _api = ApiService();
 
   @override
   void dispose() {
@@ -33,19 +50,45 @@ class _PublishScreenState extends State<PublishScreen> {
     super.dispose();
   }
 
+  Future<void> _pickAndUploadImage() async {
+    final pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (pickedFile == null) return;
+
+    try {
+      setState(() => _isUploadingImage = true);
+      final bytes = await pickedFile.readAsBytes();
+      final originalName = pickedFile.name;
+      final extension = originalName.contains('.') ? originalName.split('.').last.toLowerCase() : 'jpg';
+      final url = await _api.uploadImage(
+        bytes: bytes,
+        filename: 'service_${DateTime.now().millisecondsSinceEpoch}.$extension',
+      );
+      if (mounted) setState(() => _imageUrl = url);
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al subir imagen: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
+  }
+
   Future<void> _handlePublish() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
     try {
       final session = await _sessionService.getSession();
-      final providerId = session?.user?.id ?? 'user_1';
+      final providerId = session?.user?.id;
+      if (providerId == null || providerId.isEmpty) {
+        throw Exception('No hay una sesión autenticada');
+      }
       await _serviceRepository.createService(Service(
         id: '',
         title: _titleController.text.trim(),
         providerName: 'Usuario Actual',
         providerId: providerId,
-        imageUrl: 'https://images.unsplash.com/photo-1581578731438-314f53f6f7f5?w=400',
+        imageUrl: _imageUrl ?? '',
         rating: 0.0,
         price: _priceController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -107,13 +150,11 @@ class _PublishScreenState extends State<PublishScreen> {
                           Divider(height: 1, color: AppColors.outlineVariant.withValues(alpha: 0.5)),
                           Padding(
                             padding: const EdgeInsets.all(16),
-                            child: TextFormField(
-                              controller: _categoryController,
-                              decoration: const InputDecoration(
-                                labelText: 'Categoría',
-                                border: InputBorder.none,
-                                labelStyle: TextStyle(color: AppColors.onSurfaceVariant),
-                              ),
+                            child: DropdownButtonFormField<String>(
+                              initialValue: _categoryController.text.isEmpty ? null : _categoryController.text,
+                              decoration: const InputDecoration(labelText: 'Categoría', border: InputBorder.none),
+                              items: _categories.map((category) => DropdownMenuItem(value: category, child: Text(category))).toList(),
+                              onChanged: (value) => _categoryController.text = value ?? '',
                               validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido' : null,
                             ),
                           ),
@@ -148,6 +189,12 @@ class _PublishScreenState extends State<PublishScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: _isUploadingImage ? null : _pickAndUploadImage,
+                      icon: _isUploadingImage ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.add_photo_alternate_outlined),
+                      label: Text(_imageUrl == null ? 'Agregar imagen' : 'Imagen cargada'),
+                    ),
+                    const SizedBox(height: 16),
                     RTPrimaryButton(text: 'Publicar', onPressed: _handlePublish, isLoading: _isLoading),
                   ],
                 ),

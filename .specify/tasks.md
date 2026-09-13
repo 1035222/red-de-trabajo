@@ -12,6 +12,9 @@ Chat en tiempo real
  [x] T4: `RepositoryProvider` apunta al repositorio real y no al mock en producción.
  [x] T5: La capa de UI de chat ya consume stream y datos reales del backend.
  [x] T6: La verificación muestra que el servidor Socket.io sigue respondiendo y el flujo de mensajes está integrado junto con Express.
+ [x] T13: Evitar duplicación al usar Socket.io como única escritura de mensajes enviados.
+ [x] T14: Completar envío de audio y ubicación actual desde el chat.
+ [x] T15: Integrar reseñas, solicitudes, favoritos y compartir servicio en el detalle.
 Notificaciones push
  [ ] T7: FCM no está implementado todavía en este frontend.
  [ ] T8: No existe permiso de notificaciones en flujo post-login.

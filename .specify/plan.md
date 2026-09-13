@@ -20,6 +20,11 @@ Manejar notificaciones en foreground/background/terminated según los ejemplos o
 Plan para filtros de ubicación y precio
 Revisar search_screen.dart: confirmar si ya existe UI de filtro por precio/ubicación.
 Si no existe, agregar controles de filtro y conectar los query params correspondientes en la llamada al repositorio de servicios (dependiente de que el backend los soporte, ver backend tasks T1-T2).
+La UI usa REST para persistir texto, audio y ubicación una sola vez; Socket.io solo notifica mensajes creados por otros clientes.
+
+Plan para interacciones de servicios
+Agregar endpoints REST protegidos para reseñas, solicitudes y favoritos. Compartir usa la URL del detalle del servicio.
+
 Riesgos identificados
 Cambiar el repositorio de chat de mock a real puede requerir ajustar el manejo de estado en las pantallas de chat (de lista estática a stream reactivo).
 Pedir permiso de notificaciones push en Android 13+ requiere manejo explícito de permisos en tiempo de ejecución — validar en dispositivo real, no solo Flutter Web.

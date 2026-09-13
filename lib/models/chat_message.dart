@@ -32,7 +32,10 @@ class ChatMessage {
     this.audioUrl,
   });
 
-  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+  factory ChatMessage.fromJson(Map<String, dynamic> json, {String? currentUserId}) {
+    final senderId = json['senderId'] as String?;
+    final createdAt = json['createdAt'] as String? ?? json['time'] as String?;
+    final time = createdAt != null ? DateTime.parse(createdAt) : DateTime.now();
     return ChatMessage(
       id: json['id'] as String,
       type: MessageType.values.firstWhere(
@@ -40,8 +43,8 @@ class ChatMessage {
         orElse: () => MessageType.text,
       ),
       text: json['text'] as String,
-      isMe: json['isMe'] as bool,
-      time: DateTime.parse(json['time'] as String),
+      isMe: senderId == currentUserId,
+      time: time,
       status: MessageStatus.values.firstWhere(
         (s) => s.name == (json['status'] as String? ?? 'sent'),
         orElse: () => MessageStatus.sent,

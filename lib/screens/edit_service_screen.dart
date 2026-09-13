@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/primary_button.dart';
 import '../models/service.dart';
 import '../services/repository_provider.dart';
+import '../services/api_service.dart';
 
 class EditServiceScreen extends StatefulWidget {
   final Service service;
@@ -21,8 +23,12 @@ class _EditServiceScreenState extends State<EditServiceScreen> {
   late final _priceController = TextEditingController(text: widget.service.price);
   late final _descriptionController = TextEditingController(text: widget.service.description);
   bool _isLoading = false;
+  bool _isUploadingImage = false;
+  String? _imageUrl;
 
   final _serviceRepository = RepositoryProvider.serviceRepository;
+  final _imagePicker = ImagePicker();
+  final _api = ApiService();
 
   @override
   void dispose() {
@@ -31,6 +37,29 @@ class _EditServiceScreenState extends State<EditServiceScreen> {
     _priceController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
+    if (pickedFile == null) return;
+
+    try {
+      setState(() => _isUploadingImage = true);
+      final bytes = await pickedFile.readAsBytes();
+      final originalName = pickedFile.name;
+      final extension = originalName.contains('.') ? originalName.split('.').last.toLowerCase() : 'jpg';
+      final url = await _api.uploadImage(
+        bytes: bytes,
+        filename: 'service_${widget.service.id}_${DateTime.now().millisecondsSinceEpoch}.$extension',
+      );
+      if (mounted) setState(() => _imageUrl = url);
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al subir imagen: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
   }
 
   Future<void> _handleUpdate() async {
@@ -43,7 +72,7 @@ class _EditServiceScreenState extends State<EditServiceScreen> {
         title: _titleController.text.trim(),
         providerName: widget.service.providerName,
         providerId: widget.service.providerId,
-        imageUrl: widget.service.imageUrl,
+        imageUrl: _imageUrl ?? widget.service.imageUrl,
         rating: widget.service.rating,
         price: _priceController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -146,6 +175,12 @@ class _EditServiceScreenState extends State<EditServiceScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: _isUploadingImage ? null : _pickAndUploadImage,
+                      icon: _isUploadingImage ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.add_photo_alternate_outlined),
+                      label: Text(_imageUrl == null ? 'Cambiar imagen' : 'Imagen cargada'),
+                    ),
+                    const SizedBox(height: 16),
                     RTPrimaryButton(text: 'Guardar cambios', onPressed: _handleUpdate, isLoading: _isLoading),
                   ],
                 ),

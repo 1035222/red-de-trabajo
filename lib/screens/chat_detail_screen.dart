@@ -1,11 +1,20 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:cross_file/cross_file.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:record/record.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/chat_message.dart';
 import '../models/message.dart';
 import '../services/repository_provider.dart';
+import '../services/session_service.dart';
+import '../services/socket_service.dart';
+import '../services/api_service.dart';
 import '../widgets/avatar.dart';
 
 class ChatDetailScreen extends StatefulWidget {
@@ -21,21 +30,88 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   final _messageController = TextEditingController();
   final _chatRepository = RepositoryProvider.chatRepository;
   final _scrollController = ScrollController();
+  final _socketService = SocketService();
+  final _sessionService = SessionService();
+  final _api = ApiService();
+  final _audioRecorder = AudioRecorder();
+  final _audioPlayer = AudioPlayer();
+  DateTime? _recordingStartedAt;
+  StreamSubscription<Map<String, dynamic>>? _messageSubscription;
+  StreamSubscription<Map<String, dynamic>>? _typingSubscription;
+  StreamSubscription<String>? _errorSubscription;
+  String? _currentUserId;
   List<ChatMessage> _messages = [];
   Message? _conversation;
   bool _isTyping = false;
   bool _hasMessages = false;
+  bool _isSending = false;
 
   @override
   void initState() {
     super.initState();
     _loadConversation();
+    _initSocket();
+  }
+
+  Future<void> _initSocket() async {
+    try {
+      final session = await _sessionService.getSession();
+      _currentUserId = session?.user?.id;
+      await _socketService.connect();
+      _messageSubscription = _socketService.messageStream.listen(_onSocketMessage);
+      _typingSubscription = _socketService.typingStream.listen(_onSocketTyping);
+      _errorSubscription = _socketService.errorStream.listen(_onSocketError);
+
+      if (widget.conversationId.isNotEmpty) {
+        _socketService.joinConversation(widget.conversationId);
+      }
+    } catch (e) {
+      debugPrint('Socket init error: $e');
+    }
+  }
+
+  void _onSocketMessage(Map<String, dynamic> data) {
+    if (data['conversationId'] == widget.conversationId) {
+      final message = ChatMessage.fromJson(data, currentUserId: _currentUserId);
+      if (!_messages.any((m) => m.id == message.id)) {
+        if (mounted) {
+          setState(() {
+            _addMessageIfMissing(message);
+            _hasMessages = true;
+          });
+          _scrollToBottom();
+        }
+      }
+    }
+  }
+
+  void _addMessageIfMissing(ChatMessage message) {
+    if (_messages.any((existing) => existing.id == message.id)) return;
+    _messages.add(message);
+  }
+
+  void _onSocketTyping(Map<String, dynamic> data) {
+    if (data['conversationId'] == widget.conversationId && mounted) {
+      setState(() => _isTyping = true);
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _isTyping = false);
+      });
+    }
+  }
+
+  void _onSocketError(String error) {
+    debugPrint('Socket error: $error');
   }
 
   @override
   void dispose() {
+    _messageSubscription?.cancel();
+    _typingSubscription?.cancel();
+    _errorSubscription?.cancel();
+    _socketService.disconnect();
     _messageController.dispose();
     _scrollController.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -65,29 +141,46 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-    setState(() => _hasMessages = true);
+    if (text.isEmpty || _isSending) return;
+    
+    setState(() {
+      _isSending = true;
+      _hasMessages = true;
+    });
+    
     try {
-      await _chatRepository.sendMessage(widget.conversationId, text);
       _messageController.clear();
-      await _loadConversation();
-      _showTypingAndReply();
+      await _socketService.sendMessage(conversationId: widget.conversationId, text: text);
+      if (mounted) {
+        setState(() => _hasMessages = true);
+      }
     } on Exception catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al enviar mensaje: ${e.toString().replaceFirst('Exception: ', '')}')));
       }
+    } finally {
+      if (mounted) setState(() => _isSending = false);
     }
   }
 
-  void _showTypingAndReply() {
-    setState(() => _isTyping = true);
-    _scrollToBottom();
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      setState(() => _isTyping = false);
-      _chatRepository.sendMessage(widget.conversationId, 'Entendido, te confirmo en un momento.');
-      _loadConversation();
-    });
+  Future<void> _sendLocation(double lat, double lng, String address) async {
+    if (_isSending) return;
+    setState(() => _isSending = true);
+    
+    try {
+      await _socketService.sendMessage(
+        conversationId: widget.conversationId,
+        text: 'Ubicación compartida',
+        type: 'location',
+        extra: {'latitude': lat, 'longitude': lng, 'address': address},
+      );
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al enviar ubicación: ${e.toString().replaceFirst('Exception: ', '')}')));
+      }
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
   }
 
   void _scrollToBottom() {
@@ -127,7 +220,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                   title: Text('Foto', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurface)),
                   onTap: () {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Función próximamente')));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Las fotos del chat estarán disponibles próximamente')));
                   },
                 ),
                 ListTile(
@@ -143,7 +236,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                   title: Text('Ubicación', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurface)),
                   onTap: () {
                     Navigator.pop(context);
-                    _sendMockLocation();
+                    _showLocationPicker();
                   },
                 ),
               ],
@@ -154,22 +247,42 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     );
   }
 
-  Future<void> _sendMockLocation() async {
-    setState(() => _hasMessages = true);
-    try {
-      await _chatRepository.sendLocation(
-        widget.conversationId,
-        19.432608 + (Random().nextDouble() - 0.5) * 0.1,
-        -99.133209 + (Random().nextDouble() - 0.5) * 0.1,
-        'Av. Reforma ${Random().nextInt(300) + 1}, Ciudad de México',
-      );
-      await _loadConversation();
-      _showTypingAndReply();
-    } on Exception catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al enviar ubicación: ${e.toString().replaceFirst('Exception: ', '')}')));
-      }
+  void _showLocationPicker() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Enviar ubicación'),
+        content: const Text('Comparte tu ubicación actual con este contacto.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _sendCurrentLocation();
+            },
+            child: const Text('Compartir ubicación'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendCurrentLocation() async {
+    final enabled = await Geolocator.isLocationServiceEnabled();
+    if (!enabled) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Activa la ubicación del dispositivo')));
+      return;
     }
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permiso de ubicación denegado')));
+      return;
+    }
+    final position = await Geolocator.getCurrentPosition();
+    await _sendLocation(position.latitude, position.longitude, 'Ubicación actual');
   }
 
   String _formatTime(DateTime time) {
@@ -244,7 +357,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
               color: AppColors.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const _TypingDots(),
+            child: _TypingDots(),
           ),
         ],
       ),
@@ -254,9 +367,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   Widget _buildLocationContent(ChatMessage message) {
     return InkWell(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Mapa: ${message.address ?? 'ubicación'}'), behavior: SnackBarBehavior.floating),
-        );
+        final latitude = message.latitude;
+        final longitude = message.longitude;
+        if (latitude == null || longitude == null) return;
+        launchUrl(Uri.parse('https://www.google.com/maps/search/?api=1&query=$latitude,$longitude'), mode: LaunchMode.externalApplication);
       },
       child: Container(
         width: 220,
@@ -318,9 +432,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       bars.add(Container(width: 3, height: height, decoration: BoxDecoration(color: AppColors.onPrimary.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(2))));
     }
     return InkWell(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reproducción simulada'), behavior: SnackBarBehavior.floating));
-      },
+      onTap: () => _toggleAudio(message),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
@@ -329,7 +441,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
               width: 32,
               height: 32,
               decoration: BoxDecoration(color: AppColors.onPrimary.withValues(alpha: 0.2), shape: BoxShape.circle),
-              child: Icon(Icons.play_arrow_rounded, color: AppColors.onPrimary, size: 18),
+              child: Icon(_playingAudioId == message.id && _isAudioPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: AppColors.onPrimary, size: 18),
             ),
             const SizedBox(width: 12),
             Expanded(child: Row(mainAxisSize: MainAxisSize.min, children: bars)),
@@ -339,6 +451,40 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
         ),
       ),
     );
+  }
+
+  String? _playingAudioId;
+  bool _isAudioPlaying = false;
+
+  Future<void> _toggleAudio(ChatMessage message) async {
+    final url = message.audioUrl;
+    if (url == null || url.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Esta nota de voz no tiene archivo')));
+      return;
+    }
+    if (_playingAudioId == message.id && _isAudioPlaying) {
+      await _audioPlayer.pause();
+      if (mounted) setState(() => _isAudioPlaying = false);
+      return;
+    }
+    try {
+      await _audioPlayer.stop();
+      await _audioPlayer.play(UrlSource(url, mimeType: 'audio/webm'));
+      if (!mounted) return;
+      setState(() {
+        _playingAudioId = message.id;
+        _isAudioPlaying = true;
+      });
+      _audioPlayer.onPlayerComplete.first.then((_) {
+        if (mounted && _playingAudioId == message.id) {
+          setState(() => _isAudioPlaying = false);
+        }
+      });
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No se pudo reproducir la nota de voz: $error')));
+      }
+    }
   }
 
   Widget _buildMessageBubble(ChatMessage message, int index) {
@@ -487,6 +633,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                   contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                 ),
                 onSubmitted: (_) => _sendMessage(),
+                onChanged: (_) => setState(() {}),
               ),
             ),
           ),
@@ -502,29 +649,74 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                   boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 12, offset: const Offset(0, 4))],
                 ),
                 child: IconButton(
-                  onPressed: _sendMessage,
-                  icon: const Icon(Icons.send_rounded, color: AppColors.onPrimary),
+                  onPressed: _isSending ? null : _sendMessage,
+                  icon: _isSending ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary)) : const Icon(Icons.send_rounded, color: AppColors.onPrimary),
                 ),
               ),
             )
           else
-            _AudioRecordButton(onRecorded: _sendMockAudio),
+            _AudioRecordButton(onStart: _startAudioRecording, onRecorded: _sendRecordedAudio, onCancel: _cancelAudioRecording),
         ],
       ),
     );
   }
 
-  Future<void> _sendMockAudio() async {
-    setState(() => _hasMessages = true);
+  Future<void> _sendRecordedAudio() async {
+    if (!await _audioRecorder.hasPermission()) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Se requiere permiso para grabar audio')));
+      return;
+    }
+    final path = await _audioRecorder.stop();
+    if (path == null) return;
+    setState(() => _isSending = true);
     try {
-      await _chatRepository.sendAudio(widget.conversationId, Random().nextInt(20) + 5, 'mock_audio_url');
-      await _loadConversation();
-      _showTypingAndReply();
+      final bytes = await XFile(path).readAsBytes();
+      final audioExtension = kIsWeb ? 'webm' : 'm4a';
+      final audioUrl = await _api.uploadImage(bytes: bytes, filename: 'audio_${DateTime.now().millisecondsSinceEpoch}.$audioExtension');
+      final durationSeconds = _recordingStartedAt == null ? 0 : DateTime.now().difference(_recordingStartedAt!).inSeconds;
+      _recordingStartedAt = null;
+      await _socketService.sendMessage(
+        conversationId: widget.conversationId,
+        text: 'Nota de voz',
+        type: 'audio',
+        extra: {
+          'audioDurationSeconds': durationSeconds,
+          'audioUrl': audioUrl,
+        },
+      );
     } on Exception catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al enviar audio: ${e.toString().replaceFirst('Exception: ', '')}')));
       }
     }
+  }
+
+  Future<bool> _startAudioRecording() async {
+    if (!await _audioRecorder.hasPermission()) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Se requiere permiso para grabar audio')));
+      return false;
+    }
+    try {
+      await _audioRecorder.start(
+        const RecordConfig(encoder: AudioEncoder.opus),
+        path: 'voice_${DateTime.now().millisecondsSinceEpoch}.webm',
+      );
+      final started = await _audioRecorder.isRecording();
+      if (!started && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El navegador no pudo iniciar el micrófono')));
+      }
+      if (!started) return false;
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No se pudo iniciar el micrófono: $error')));
+      return false;
+    }
+    _recordingStartedAt = DateTime.now();
+    return true;
+  }
+
+  Future<void> _cancelAudioRecording() async {
+    await _audioRecorder.stop();
+    _recordingStartedAt = null;
   }
 
   @override
@@ -584,9 +776,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
 }
 
 class _AudioRecordButton extends StatefulWidget {
+  final Future<bool> Function() onStart;
   final Future<void> Function() onRecorded;
+  final Future<void> Function() onCancel;
 
-  const _AudioRecordButton({required this.onRecorded});
+  const _AudioRecordButton({required this.onStart, required this.onRecorded, required this.onCancel});
 
   @override
   State<_AudioRecordButton> createState() => _AudioRecordButtonState();
@@ -613,7 +807,9 @@ class _AudioRecordButtonState extends State<_AudioRecordButton> with SingleTicke
     super.dispose();
   }
 
-  void _startRecording() {
+  Future<void> _startRecording() async {
+    final started = await widget.onStart();
+    if (!started || !mounted) return;
     setState(() {
       _isRecording = true;
       _seconds = 0;
@@ -624,16 +820,19 @@ class _AudioRecordButtonState extends State<_AudioRecordButton> with SingleTicke
     });
   }
 
-  void _stopRecording() async {
+  Future<void> _stopRecording() async {
     _timer?.cancel();
     setState(() => _isRecording = false);
     if (_seconds >= 1) {
       await widget.onRecorded();
+    } else {
+      await widget.onCancel();
     }
   }
 
-  void _cancelRecording() {
+  Future<void> _cancelRecording() async {
     _timer?.cancel();
+    await widget.onCancel();
     setState(() {
       _isRecording = false;
       _seconds = 0;
@@ -646,6 +845,7 @@ class _AudioRecordButtonState extends State<_AudioRecordButton> with SingleTicke
     return GestureDetector(
       onLongPressStart: (_) => _startRecording(),
       onLongPressEnd: (_) => _stopRecording(),
+      onTap: () => _isRecording ? _stopRecording() : _startRecording(),
       onHorizontalDragEnd: (details) {
         if (details.primaryVelocity != null && details.primaryVelocity! > 100) {
           _cancelRecording();

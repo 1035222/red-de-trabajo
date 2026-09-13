@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+
+import '../services/firebase_auth_service.dart';
+
 import 'package:google_fonts/google_fonts.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../services/session_service.dart';
-import '../screens/onboarding_screen.dart';
 import '../screens/login_screen.dart';
-import '../screens/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,7 +16,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
@@ -27,14 +30,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final sessionService = SessionService();
     final session = await sessionService.getSession();
     if (!mounted) return;
-    if (session != null && session.authorized) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
-    } else if (session != null && !session.authorized) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-    } else {
-      if (!mounted) return;
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const OnboardingScreen()));
+    if (session != null) {
+      await FirebaseAuthService().signOut();
+      await sessionService.clearSession();
     }
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
 
   @override
@@ -69,12 +73,25 @@ class LogoWithShadow extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.onPrimary.withValues(alpha: 0.2), AppColors.onPrimary.withValues(alpha: 0.05)],
+          colors: [
+            AppColors.onPrimary.withValues(alpha: 0.2),
+            AppColors.onPrimary.withValues(alpha: 0.05),
+          ],
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: AppColors.onPrimary.withValues(alpha: 0.15), blurRadius: 32, offset: const Offset(0, 16))],
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.onPrimary.withValues(alpha: 0.15),
+            blurRadius: 32,
+            offset: const Offset(0, 16),
+          ),
+        ],
       ),
-      child: const Icon(Icons.handshake_rounded, size: 56, color: AppColors.onPrimary),
+      child: const Icon(
+        Icons.handshake_rounded,
+        size: 56,
+        color: AppColors.onPrimary,
+      ),
     );
   }
 }
@@ -84,7 +101,13 @@ class AppTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text('Red de Trabajo', style: AppTextStyles.headlineLg.copyWith(color: AppColors.onPrimary, letterSpacing: -0.5));
+    return Text(
+      'Red de Trabajo',
+      style: AppTextStyles.headlineLg.copyWith(
+        color: AppColors.onPrimary,
+        letterSpacing: -0.5,
+      ),
+    );
   }
 }
 
@@ -95,7 +118,12 @@ class AppSubtitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       'Conecta con profesionales',
-      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.onPrimary.withValues(alpha: 0.85), height: 1.5),
+      style: GoogleFonts.inter(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: AppColors.onPrimary.withValues(alpha: 0.85),
+        height: 1.5,
+      ),
     );
   }
 }

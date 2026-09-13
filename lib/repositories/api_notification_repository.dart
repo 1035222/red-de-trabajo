@@ -12,17 +12,14 @@ class ApiNotificationRepository implements NotificationRepository {
   Future<List<AppNotification>> getNotifications() async {
     final response = await _api.get('/notifications');
     if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
-      if (decoded is List) {
-        return decoded.map((json) => AppNotification.fromJson(json)).toList();
-      }
-      return [];
+      final List data = jsonDecode(response.body);
+      return data.map((json) => AppNotification.fromJson(json)).toList();
     }
-    throw Exception('Error al obtener notificaciones');
+    return [];
   }
 
   @override
   Future<void> markAsRead(String notificationId) async {
-    await _api.put('/notifications/$notificationId/read', {});
+    await _api.patch('/notifications/$notificationId', {'read': true});
   }
 }

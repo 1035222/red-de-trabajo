@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../models/service.dart';
-import '../services/repository_provider.dart';
-import '../widgets/service_card.dart';
-import '../screens/service_detail_screen.dart';
+import '../services/api_service.dart';
 
-class RequestsScreen extends StatelessWidget {
+class RequestsScreen extends StatefulWidget {
   const RequestsScreen({super.key});
 
   @override
+  State<RequestsScreen> createState() => _RequestsScreenState();
+}
+
+class _RequestsScreenState extends State<RequestsScreen> {
+  final _api = ApiService();
+
+  Future<List<Map<String, dynamic>>> _loadRequests() async {
+    final response = await _api.get('/requests');
+    if (response.statusCode != 200) throw Exception('No se pudieron cargar solicitudes');
+    return (jsonDecode(response.body) as List).cast<Map<String, dynamic>>();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final serviceRepository = RepositoryProvider.serviceRepository;
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -21,14 +31,13 @@ class RequestsScreen extends StatelessWidget {
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
         title: Text('Solicitudes', style: AppTextStyles.titleLg),
       ),
-      body: FutureBuilder<List<Service>>(
-        future: serviceRepository.getAllServices(),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _loadRequests(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final services = snapshot.data ?? [];
-          final requests = services.where((s) => s.id == '1' || s.id == '2').toList();
+          final requests = snapshot.data ?? [];
 
           if (requests.isEmpty) {
             return Center(
@@ -57,18 +66,15 @@ class RequestsScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             itemCount: requests.length,
             itemBuilder: (context, index) {
-              final service = requests[index];
+              final request = requests[index];
+              final service = request['service'] as Map<String, dynamic>;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 16),
-                child: RTServiceCard(
-                  imageUrl: service.imageUrl,
-                  serviceName: service.title,
-                  providerName: service.providerName,
-                  rating: service.rating,
-                  price: service.price,
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => ServiceDetailScreen(service: service)));
-                  },
+                child: ListTile(
+                  tileColor: AppColors.surfaceContainerLowest,
+                  title: Text(service['title'] as String? ?? 'Servicio'),
+                  subtitle: Text('Estado: ${request['status'] ?? 'pending'}'),
+                  leading: const Icon(Icons.assignment_outlined),
                 ),
               );
             },

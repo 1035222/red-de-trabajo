@@ -20,7 +20,8 @@ Portafolio: galería de trabajos anteriores — conectado a backend real.
 Búsqueda y filtrado: por texto, categoría (ubicación y precio: confirmar si ya están implementados o siguen en el documento como aspiracionales — [NEEDS CLARIFICATION]).
 Calificaciones y reseñas: sistema de estrellas + comentario — conectado a backend real.
 Flujos clave (pendientes)
-Chat en tiempo real: sigue en mock; fase de implementación con Socket.io pendiente.
+Chat en tiempo real: integrado con Socket.io; se amplía con texto, audio y ubicación.
+Interacción de servicios: reseñas, solicitudes, favoritos y compartir desde el detalle.
 Notificaciones: push (Firebase Cloud Messaging) — no confirmado si está implementado; [NEEDS CLARIFICATION].
 Criterios de éxito
 Un usuario puede publicar un servicio con foto y descripción, y verlo persistido y consultable por otros usuarios.
@@ -35,10 +36,10 @@ Pagos en línea.
 Reservas con confirmación automática.
 Verificación de identidad con documentos.
 Integración con redes sociales (más allá de Google Sign-In para login).
-Subida de imágenes gestionada por el backend (S3/Cloudinary) — de momento el frontend sube y el backend solo guarda URL; migrar esto sería un cambio de alcance a decidir.
+Almacenamiento externo de imágenes — en desarrollo se usa subida local al backend y se persiste la URL en MySQL.
 Resuelto (respuestas del equipo, 10/09/2026)
 Filtros de ubicación y precio: estado no confirmado — antes de dar por hecha esta funcionalidad, verificar en el código real (frontend search_screen.dart / backend serviceController) si ya existen o solo está el filtro por categoría/texto.
-Chat en tiempo real: se mantiene la decisión de implementarlo con Socket.io. Sigue pendiente de construcción (fase 3 del roadmap original: "chat en tiempo real, notificaciones push, ...").
+Chat en tiempo real: se mantiene la decisión de implementarlo con Socket.io. REST persiste cada mensaje una sola vez y Socket.io distribuye los mensajes entrantes.
 Notificaciones push (FCM): siguen en el roadmap del MVP — no se excluyen.
 [NEEDS CLARIFICATION] — pendiente
-¿Se planea en algún momento mover la subida de imágenes al backend (Cloudinary/S3), o el enfoque actual (URL gestionada por frontend) queda como definitivo?
+La subida local al backend se usa en desarrollo para evitar facturación de Firebase Storage.

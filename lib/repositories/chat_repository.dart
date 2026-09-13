@@ -7,4 +7,8 @@ abstract class ChatRepository {
   Future<ChatMessage> sendMessage(String conversationId, String text);
   Future<ChatMessage> sendLocation(String conversationId, double latitude, double longitude, String address);
   Future<ChatMessage> sendAudio(String conversationId, int durationSeconds, String audioUrl);
+  Stream<ChatMessage> watchMessages(String conversationId);
+  void joinConversation(String conversationId);
+  void leaveConversation(String conversationId);
+  void dispose();
 }

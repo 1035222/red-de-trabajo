@@ -1,18 +1,31 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/service.dart';
-import '../services/repository_provider.dart';
+import '../services/api_service.dart';
 import '../widgets/service_card.dart';
 import '../screens/service_detail_screen.dart';
 
-class FavoritesScreen extends StatelessWidget {
+class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
 
   @override
+  State<FavoritesScreen> createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends State<FavoritesScreen> {
+  final _api = ApiService();
+
+  Future<List<Service>> _loadFavorites() async {
+    final response = await _api.get('/favorites');
+    if (response.statusCode != 200) throw Exception('No se pudieron cargar favoritos');
+    final data = jsonDecode(response.body) as List;
+    return data.map((item) => Service.fromJson(item['service'] as Map<String, dynamic>)).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final serviceRepository = RepositoryProvider.serviceRepository;
-    final favoriteIds = <String>{'1', '2', '5'};
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -23,13 +36,12 @@ class FavoritesScreen extends StatelessWidget {
         title: Text('Favoritos', style: AppTextStyles.titleLg),
       ),
       body: FutureBuilder<List<Service>>(
-        future: serviceRepository.getAllServices(),
+        future: _loadFavorites(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          final services = snapshot.data ?? [];
-          final favorites = services.where((s) => favoriteIds.contains(s.id)).toList();
+          final favorites = snapshot.data ?? [];
 
           if (favorites.isEmpty) {
             return Center(

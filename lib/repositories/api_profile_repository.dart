@@ -16,7 +16,7 @@ class ApiProfileRepository implements ProfileRepository {
     if (response.statusCode == 200) {
       return AppUser.fromJson(jsonDecode(response.body));
     }
-    throw Exception('Error al obtener perfil');
+    throw Exception('Error al obtener perfil (${response.statusCode})');
   }
 
   @override
@@ -30,7 +30,7 @@ class ApiProfileRepository implements ProfileRepository {
     if (response.statusCode == 200) {
       return AppUser.fromJson(jsonDecode(response.body));
     }
-     throw Exception('Error al actualizar perfil (${response.statusCode}): ${response.body}');
+    throw Exception('Error al actualizar perfil (${response.statusCode}): ${response.body}');
   }
 
   @override
@@ -40,7 +40,7 @@ class ApiProfileRepository implements ProfileRepository {
       final List data = jsonDecode(response.body);
       return data.map((json) => Review.fromJson(json)).toList();
     }
-    throw Exception('Error al obtener reseñas');
+    return [];
   }
 
   @override
@@ -50,6 +50,6 @@ class ApiProfileRepository implements ProfileRepository {
       final List data = jsonDecode(response.body);
       return data.map((json) => PortfolioItem.fromJson(json)).toList();
     }
-    throw Exception('Error al obtener portafolio');
+    return [];
   }
 }
