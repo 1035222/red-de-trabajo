@@ -1,8 +1,16 @@
+import 'dart:async';
+
+import '../l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/service.dart';
 import '../services/repository_provider.dart';
+import '../services/app_navigation.dart';
+import '../services/push_notification_service.dart';
+import '../services/session_service.dart';
 import '../widgets/category_icon.dart';
 import '../widgets/service_card.dart';
 import '../widgets/publish_fab.dart';
@@ -28,8 +36,14 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
+  String _userName = '';
+  int _unreadNotificationCount = 0;
+  Timer? _notificationRefreshTimer;
+  StreamSubscription<void>? _notificationSubscription;
+  bool _isRefreshingNotificationCount = false;
+  bool _refreshNotificationCountAgain = false;
 
   final _serviceRepository = RepositoryProvider.serviceRepository;
   List<Service> _featuredServices = [];
@@ -40,7 +54,80 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    AppNavigation.homeReady();
     _loadData();
+    _loadUserName();
+    _loadUnreadNotificationCount(showError: true);
+    _notificationSubscription = PushNotificationService.notificationStream
+        .listen((_) => _loadUnreadNotificationCount());
+    _notificationRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _loadUnreadNotificationCount(),
+    );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    AppNavigation.homeDisposed();
+    _notificationRefreshTimer?.cancel();
+    _notificationSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadUnreadNotificationCount();
+    }
+  }
+
+  Future<void> _loadUserName() async {
+    final session = await SessionService().getSession();
+    if (!mounted) return;
+    setState(() => _userName = session?.user?.name.trim() ?? '');
+  }
+
+  Future<void> _loadUnreadNotificationCount({bool showError = false}) async {
+    if (_isRefreshingNotificationCount) {
+      _refreshNotificationCountAgain = true;
+      return;
+    }
+    _isRefreshingNotificationCount = true;
+    try {
+      final count = await RepositoryProvider.notificationRepository
+          .getUnreadCount();
+      if (!mounted) return;
+      setState(() {
+        _unreadNotificationCount = count;
+      });
+    } on Exception catch (error) {
+      debugPrint('No se pudo actualizar el contador de notificaciones: $error');
+      if (showError && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: LocalizedText(
+              'No se pudo cargar el contador de notificaciones: ${error.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
+      }
+    } finally {
+      _isRefreshingNotificationCount = false;
+      if (_refreshNotificationCountAgain && mounted) {
+        _refreshNotificationCountAgain = false;
+        unawaited(_loadUnreadNotificationCount());
+      }
+    }
+  }
+
+  Future<void> _openNotifications() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+    );
+    await _loadUnreadNotificationCount();
   }
 
   Future<void> _loadData() async {
@@ -58,7 +145,13 @@ class _HomeScreenState extends State<HomeScreen> {
     } on Exception catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar datos: ${e.toString().replaceFirst('Exception: ', '')}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: LocalizedText(
+              'Error al cargar datos: ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
       }
     }
   }
@@ -73,44 +166,66 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             DrawerHeader(
               decoration: const BoxDecoration(
-                gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [AppColors.primary, AppColors.primaryContainer]),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [AppColors.primary, AppColors.primaryContainer],
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.handshake_rounded, size: 48, color: AppColors.onPrimary),
+                  const Icon(
+                    Icons.handshake_rounded,
+                    size: 48,
+                    color: AppColors.onPrimary,
+                  ),
                   const SizedBox(height: 16),
-                  Text('Red de Trabajo', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onPrimary)),
+                  LocalizedText(
+                    'Red de Trabajo',
+                    style: AppTextStyles.headlineMd.copyWith(
+                      color: AppColors.onPrimary,
+                    ),
+                  ),
                 ],
               ),
             ),
             ListTile(
               leading: const Icon(Icons.home_rounded, color: AppColors.primary),
-              title: const Text('Inicio'),
+              title: const LocalizedText('Inicio'),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => _currentIndex = 0);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.search_rounded, color: AppColors.primary),
-              title: const Text('Buscar'),
+              leading: const Icon(
+                Icons.search_rounded,
+                color: AppColors.primary,
+              ),
+              title: const LocalizedText('Buscar'),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => _currentIndex = 1);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.chat_bubble_rounded, color: AppColors.primary),
-              title: const Text('Mensajes'),
+              leading: const Icon(
+                Icons.chat_bubble_rounded,
+                color: AppColors.primary,
+              ),
+              title: const LocalizedText('Mensajes'),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => _currentIndex = 2);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.person_rounded, color: AppColors.primary),
-              title: const Text('Mi perfil'),
+              leading: const Icon(
+                Icons.person_rounded,
+                color: AppColors.primary,
+              ),
+              title: const LocalizedText('Mi perfil'),
               onTap: () {
                 Navigator.pop(context);
                 setState(() => _currentIndex = 3);
@@ -118,43 +233,73 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.favorite_border_rounded, color: AppColors.primary),
-              title: const Text('Favoritos'),
+              leading: const Icon(
+                Icons.favorite_border_rounded,
+                color: AppColors.primary,
+              ),
+              title: const LocalizedText('Favoritos'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoritesScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+                );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.assignment_rounded, color: AppColors.primary),
-              title: const Text('Solicitudes'),
+              leading: const Icon(
+                Icons.assignment_rounded,
+                color: AppColors.primary,
+              ),
+              title: const LocalizedText('Solicitudes'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const RequestsScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RequestsScreen()),
+                );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.settings_outlined, color: AppColors.onSurfaceVariant),
-              title: const Text('Configuración'),
+              leading: Icon(
+                Icons.settings_outlined,
+                color: AppColors.onSurfaceVariant,
+              ),
+              title: const LocalizedText('Configuración'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.info_outlined, color: AppColors.onSurfaceVariant),
-              title: const Text('Acerca de'),
+              leading: Icon(
+                Icons.info_outlined,
+                color: AppColors.onSurfaceVariant,
+              ),
+              title: const LocalizedText('Acerca de'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AboutScreen()),
+                );
               },
             ),
             ListTile(
-              leading: const Icon(Icons.description_outlined, color: AppColors.onSurfaceVariant),
-              title: const Text('Términos y condiciones'),
+              leading: Icon(
+                Icons.description_outlined,
+                color: AppColors.onSurfaceVariant,
+              ),
+              title: const LocalizedText('Términos y condiciones'),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TermsScreen()),
+                );
               },
             ),
           ],
@@ -168,35 +313,75 @@ class _HomeScreenState extends State<HomeScreen> {
             categories: _categoriesServices,
             recentServices: _recentServices,
             isLoading: _isLoading,
+            userName: _userName,
+            unreadNotificationCount: _unreadNotificationCount,
+            onNotificationsTap: _openNotifications,
             onCategoryTap: (category) {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => SearchScreen(initialCategory: category)));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SearchScreen(initialCategory: category),
+                ),
+              );
             },
             onServiceTap: (service) {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => ServiceDetailScreen(service: service)));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ServiceDetailScreen(service: service),
+                ),
+              );
             },
             onProfileTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const MyProfileScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MyProfileScreen()),
+              );
             },
           ),
-          SearchScreen(fullScreen: true, onServiceTap: (service) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => ServiceDetailScreen(service: service)));
-          }, onBack: () {
-            setState(() => _currentIndex = 0);
-          }),
-          ChatListScreen(fullScreen: true, onChatTap: (conversationId) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => ChatDetailScreen(conversationId: conversationId)));
-          }, onBack: () {
-            setState(() => _currentIndex = 0);
-          }),
-          ProfileScreen(onBack: () {
-            setState(() => _currentIndex = 0);
-          }),
+          SearchScreen(
+            fullScreen: true,
+            onServiceTap: (service) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ServiceDetailScreen(service: service),
+                ),
+              );
+            },
+            onBack: () {
+              setState(() => _currentIndex = 0);
+            },
+          ),
+          ChatListScreen(
+            fullScreen: true,
+            onChatTap: (conversationId) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      ChatDetailScreen(conversationId: conversationId),
+                ),
+              );
+            },
+            onBack: () {
+              setState(() => _currentIndex = 0);
+            },
+          ),
+          ProfileScreen(
+            onBack: () {
+              setState(() => _currentIndex = 0);
+            },
+          ),
         ],
       ),
       floatingActionButton: _currentIndex == 0
           ? RTPublishFab(
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const PublishScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PublishScreen()),
+                );
               },
             )
           : null,
@@ -214,6 +399,9 @@ class _HomeTab extends StatelessWidget {
   final List<Service> categories;
   final List<Service> recentServices;
   final bool isLoading;
+  final String userName;
+  final int unreadNotificationCount;
+  final VoidCallback onNotificationsTap;
   final ValueChanged<String> onCategoryTap;
   final ValueChanged<Service> onServiceTap;
   final VoidCallback onProfileTap;
@@ -223,6 +411,9 @@ class _HomeTab extends StatelessWidget {
     required this.categories,
     required this.recentServices,
     required this.isLoading,
+    required this.userName,
+    required this.unreadNotificationCount,
+    required this.onNotificationsTap,
     required this.onCategoryTap,
     required this.onServiceTap,
     required this.onProfileTap,
@@ -253,10 +444,16 @@ class _HomeTab extends StatelessWidget {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.notifications_rounded),
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
-              },
+              icon: Badge(
+                isLabelVisible: unreadNotificationCount > 0,
+                label: Text(
+                  unreadNotificationCount > 99
+                      ? '99+'
+                      : '$unreadNotificationCount',
+                ),
+                child: const Icon(Icons.notifications_rounded),
+              ),
+              onPressed: onNotificationsTap,
             ),
             IconButton(
               icon: const Icon(Icons.person_rounded),
@@ -264,8 +461,11 @@ class _HomeTab extends StatelessWidget {
             ),
           ],
           flexibleSpace: FlexibleSpaceBar(
-            titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-            title: Text('Red de Trabajo', style: AppTextStyles.titleLg.copyWith(color: AppColors.onPrimary)),
+            titlePadding: const EdgeInsets.only(left: 72, bottom: 16),
+            title: LocalizedText(
+              'Red de Trabajo',
+              style: AppTextStyles.titleLg.copyWith(color: AppColors.onPrimary),
+            ),
           ),
         ),
         SliverToBoxAdapter(
@@ -274,28 +474,55 @@ class _HomeTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('¡Bienvenido!', style: AppTextStyles.headlineMd),
+                LocalizedText(
+                  userName.isEmpty ? '¡Hola!' : '¡Hola, $userName!',
+                  style: AppTextStyles.headlineMd,
+                ),
                 const SizedBox(height: 6),
-                Text('¿Qué servicio necesitas hoy?', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                LocalizedText(
+                  '¿Qué servicio necesitas hoy?',
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 GestureDetector(
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => SearchScreen(onServiceTap: onServiceTap)));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            SearchScreen(onServiceTap: onServiceTap),
+                      ),
+                    );
                   },
                   child: Container(
                     decoration: BoxDecoration(
                       color: AppColors.surfaceContainerLowest,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: AppColors.outlineVariant.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: TextField(
                       enabled: false,
                       decoration: InputDecoration(
-                        hintText: 'Buscar servicios...',
-                        hintStyle: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
-                        prefixIcon: const Icon(Icons.search_rounded, color: AppColors.onSurfaceVariant),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                        hintText: 'Buscar servicios...'.tr,
+                        hintStyle: AppTextStyles.bodyMd.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: AppColors.onSurfaceVariant,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 14,
+                        ),
                       ),
                     ),
                   ),
@@ -303,13 +530,27 @@ class _HomeTab extends StatelessWidget {
                 const SizedBox(height: 28),
                 Row(
                   children: [
-                    Text('Categorías', style: AppTextStyles.headlineMd),
+                    LocalizedText(
+                      'Categorías',
+                      style: AppTextStyles.headlineMd,
+                    ),
                     const Spacer(),
                     TextButton(
                       onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => SearchScreen(onServiceTap: onServiceTap)));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                SearchScreen(onServiceTap: onServiceTap),
+                          ),
+                        );
                       },
-                      child: Text('Ver todo', style: AppTextStyles.labelMd.copyWith(color: AppColors.primary)),
+                      child: LocalizedText(
+                        'Ver todo',
+                        style: AppTextStyles.labelMd.copyWith(
+                          color: AppColors.primary,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -321,11 +562,20 @@ class _HomeTab extends StatelessWidget {
                     itemCount: uniqueCategories.length,
                     itemBuilder: (context, index) {
                       final category = uniqueCategories.elementAt(index);
-                      final icon = index == 0 ? Icons.grid_view_rounded : Icons.category_rounded;
-                      final color = index == 0 ? AppColors.primary : AppColors.secondary;
+                      final icon = index == 0
+                          ? Icons.grid_view_rounded
+                          : Icons.category_rounded;
+                      final color = index == 0
+                          ? AppColors.primary
+                          : AppColors.secondary;
                       return Padding(
                         padding: const EdgeInsets.only(right: 16),
-                        child: RTCategoryIcon(icon: icon, color: color, label: category, onTap: () => onCategoryTap(category)),
+                        child: RTCategoryIcon(
+                          icon: icon,
+                          color: color,
+                          label: category,
+                          onTap: () => onCategoryTap(category),
+                        ),
                       );
                     },
                   ),
@@ -333,13 +583,27 @@ class _HomeTab extends StatelessWidget {
                 const SizedBox(height: 28),
                 Row(
                   children: [
-                    Text('Servicios destacados', style: AppTextStyles.headlineMd),
+                    LocalizedText(
+                      'Servicios destacados',
+                      style: AppTextStyles.headlineMd,
+                    ),
                     const Spacer(),
                     TextButton(
                       onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => SearchScreen(onServiceTap: onServiceTap)));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                SearchScreen(onServiceTap: onServiceTap),
+                          ),
+                        );
                       },
-                      child: Text('Ver todo', style: AppTextStyles.labelMd.copyWith(color: AppColors.primary)),
+                      child: LocalizedText(
+                        'Ver todo',
+                        style: AppTextStyles.labelMd.copyWith(
+                          color: AppColors.primary,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -368,17 +632,21 @@ class _HomeTab extends StatelessWidget {
                 ),
                 if (recentServices.isNotEmpty) ...[
                   const SizedBox(height: 24),
-                  Text('Servicios recientes', style: AppTextStyles.headlineMd),
+                  LocalizedText(
+                    'Servicios recientes',
+                    style: AppTextStyles.headlineMd,
+                  ),
                   const SizedBox(height: 16),
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.75,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.75,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
                     itemCount: recentServices.length,
                     itemBuilder: (context, index) {
                       final service = recentServices[index];
@@ -402,5 +670,3 @@ class _HomeTab extends StatelessWidget {
     );
   }
 }
-
-

@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_text_styles.dart';
 
@@ -37,7 +38,7 @@ class RTCategoryIcon extends StatelessWidget {
           ),
           if (label != null) ...[
             const SizedBox(height: 10),
-            Text(label!, style: AppTextStyles.labelSm.copyWith(fontWeight: FontWeight.w500)),
+            LocalizedText(label!, style: AppTextStyles.labelSm.copyWith(fontWeight: FontWeight.w500)),
           ],
         ],
       ),

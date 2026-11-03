@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -25,7 +26,7 @@ class MyProfileScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        title: Text('Mi perfil', style: AppTextStyles.titleLg),
+        title: LocalizedText('Mi perfil', style: AppTextStyles.titleLg),
       ),
       body: FutureBuilder<AppUser?>(
         future: _loadUserProfile(profileRepository, sessionService),
@@ -41,9 +42,9 @@ class MyProfileScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
                   const SizedBox(height: 16),
-                  Text('Error al cargar el perfil', style: AppTextStyles.bodyMd),
+                  LocalizedText('Error al cargar el perfil', style: AppTextStyles.bodyMd),
                   const SizedBox(height: 8),
-                  Text(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+                  LocalizedText(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
                 ],
               ),
             );
@@ -55,7 +56,7 @@ class MyProfileScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.login_rounded, size: 48, color: AppColors.onSurfaceVariant),
                   const SizedBox(height: 16),
-                  Text('No has iniciado sesión', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+                  LocalizedText('No has iniciado sesión', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
                 ],
               ),
             );
@@ -66,7 +67,7 @@ class MyProfileScreen extends StatelessWidget {
             children: [
               _ProfileTile(
                 icon: Icons.person_outline_rounded,
-                title: 'Información personal',
+                title: 'Información personal'.tr,
                 subtitle: user.name,
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => EditProfileScreen(user: user)));
@@ -75,7 +76,7 @@ class MyProfileScreen extends StatelessWidget {
               const SizedBox(height: 8),
               _ProfileTile(
                 icon: Icons.work_outline_rounded,
-                title: 'Mis servicios',
+                title: 'Mis servicios'.tr,
                 subtitle: '${user.servicesCount ?? 0} servicios publicados',
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const MyServicesScreen()));
@@ -84,7 +85,7 @@ class MyProfileScreen extends StatelessWidget {
               const SizedBox(height: 8),
               _ProfileTile(
                 icon: Icons.photo_library_outlined,
-                title: 'Portafolio',
+                title: 'Portafolio'.tr,
                 subtitle: '${user.servicesCount ?? 0} proyectos',
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const PortfolioScreen()));
@@ -93,7 +94,7 @@ class MyProfileScreen extends StatelessWidget {
               const SizedBox(height: 8),
               _ProfileTile(
                 icon: Icons.rate_review_outlined,
-                title: 'Reseñas',
+                title: 'Reseñas'.tr,
                 subtitle: 'Calificación ${(user.rating ?? 0).toStringAsFixed(1)}',
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewsScreen()));
@@ -102,7 +103,7 @@ class MyProfileScreen extends StatelessWidget {
               const SizedBox(height: 8),
               _ProfileTile(
                 icon: Icons.notifications_rounded,
-                title: 'Notificaciones',
+                title: 'Notificaciones'.tr,
                 subtitle: 'Actividad reciente',
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
@@ -111,7 +112,7 @@ class MyProfileScreen extends StatelessWidget {
               const SizedBox(height: 8),
               _ProfileTile(
                 icon: Icons.settings_outlined,
-                title: 'Configuración',
+                title: 'Configuración'.tr,
                 subtitle: 'Notificaciones, privacidad, tema',
                 onTap: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
@@ -152,9 +153,9 @@ class _ProfileTile extends StatelessWidget {
         decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
         child: Icon(icon, color: AppColors.primary),
       ),
-      title: Text(title, style: AppTextStyles.labelMd),
-      subtitle: Text(subtitle, style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
-      trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.outline),
+      title: LocalizedText(title, style: AppTextStyles.labelMd),
+      subtitle: LocalizedText(subtitle, style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+      trailing: Icon(Icons.chevron_right_rounded, color: AppColors.outline),
       onTap: onTap,
     );
   }

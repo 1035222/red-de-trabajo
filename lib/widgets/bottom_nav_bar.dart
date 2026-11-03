@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
@@ -25,26 +26,26 @@ class RTBottomNavBar extends StatelessWidget {
           children: [
             _NavItem(
               icon: Icons.home_rounded,
-              label: 'Inicio',
+              label: 'Inicio'.tr,
               isActive: currentIndex == 0,
               onTap: () => onTap(0),
             ),
             _NavItem(
               icon: Icons.search_rounded,
-              label: 'Buscar',
+              label: 'Buscar'.tr,
               isActive: currentIndex == 1,
               onTap: () => onTap(1),
             ),
             const SizedBox(width: 40),
             _NavItem(
               icon: Icons.chat_bubble_rounded,
-              label: 'Chat',
+              label: 'Chat'.tr,
               isActive: currentIndex == 2,
               onTap: () => onTap(2),
             ),
             _NavItem(
               icon: Icons.person_rounded,
-              label: 'Perfil',
+              label: 'Perfil'.tr,
               isActive: currentIndex == 3,
               onTap: () => onTap(3),
             ),
@@ -96,7 +97,7 @@ class _NavItem extends StatelessWidget {
               width: 40,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(
+                child: LocalizedText(
                   label,
                   style: TextStyle(
                     fontSize: 10,

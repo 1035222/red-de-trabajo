@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../theme/app_colors.dart';
@@ -33,7 +34,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
-        title: Text('Favoritos', style: AppTextStyles.titleLg),
+        title: LocalizedText('Favoritos', style: AppTextStyles.titleLg),
       ),
       body: FutureBuilder<List<Service>>(
         future: _loadFavorites(),
@@ -58,9 +59,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     child: Icon(Icons.favorite_border_rounded, size: 48, color: AppColors.primary),
                   ),
                   const SizedBox(height: 24),
-                  Text('No tienes favoritos guardados', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurfaceVariant)),
+                  LocalizedText('No tienes favoritos guardados', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurfaceVariant)),
                   const SizedBox(height: 8),
-                  Text('Explora servicios y guarda tus favoritos', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                  LocalizedText('Explora servicios y guarda tus favoritos', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
                 ],
               ),
             );
@@ -70,7 +71,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             padding: const EdgeInsets.all(20),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 0.75,
+              childAspectRatio: 0.65,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
             ),

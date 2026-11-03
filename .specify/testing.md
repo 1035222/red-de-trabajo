@@ -2,6 +2,34 @@ TESTING.md — red_de_trabajo (Frontend Flutter)
 
 Documenta las pruebas ejecutadas para cada funcionalidad, siguiendo la estrategia del documento técnico original (unitarias, widgets, integración, rendimiento).
 
+## Correcciones de bienvenida, chat y notificaciones (2026-10-31)
+
+- `flutter analyze`: sin problemas.
+- `flutter test test/l10n/app_localizations_test.dart`: pasó; incluye la traducción del saludo personalizado.
+- `flutter build web --release`: compilación completada. El dry run WASM informa una incompatibilidad del paquete `socket_io_common`, pero el build web normal termina correctamente.
+- No se validó el hot restart: el runtime de Chrome quedó esperando la conexión del servicio de depuración y el Dart Tooling Daemon no encontró una app activa.
+- No se validó push web end-to-end con permiso/token real. Firebase Messaging Web usa su VAPID predeterminada si no se configura `FCM_VAPID_KEY`; la clave personalizada es opcional.
+- No se ejecutó una prueba visual con dos cuentas reales para chat; el ajuste de contraste evita dibujar en blanco sobre la burbuja entrante blanca.
+
+## Fotos en chat y navegación desde notificaciones (2026-10-31)
+
+- Agregadas pruebas unitarias para mensajes de tipo foto y metadatos de destino de notificaciones, incluyendo compatibilidad con notificaciones antiguas sin metadata.
+- La persistencia de destinos añade `notification.metadata` JSON (campo Prisma `Notification.data`). La base de datos local estaba desactualizada y causaba HTTP 500 al listar; se agregó la columna nullable en esa base local. Cada entorno desplegado debe sincronizar el esquema Prisma antes de publicar la API.
+- Pendiente la validación real entre dos cuentas y un dispositivo con permisos push; el servicio usa el endpoint autenticado de carga y Socket.io.
+- Backend: se valida la sintaxis de Node.js y el esquema Prisma sin conectar ni modificar la base de datos.
+
+## Error 500 en bandeja de notificaciones (2026-10-31)
+
+- Confirmado que la tabla local `notification` carecía de la columna `metadata` usada por Prisma; se aplicó `ALTER TABLE notification ADD COLUMN metadata JSON NULL`.
+- Verificado que Prisma vuelve a consultar notificaciones y contar no leídas; la API local se reinició con las rutas actuales y devuelve 401 sin token, como corresponde al middleware de autenticación.
+- Pendiente recargar la app web autenticada para confirmar la pantalla con la sesión real.
+
+## Contador de notificaciones y eliminación de mensajes (2026-10-31)
+
+- El contador ahora usa el endpoint protegido `GET /api/notifications/unread-count`; se refresca al recibir FCM, al reanudar la aplicación y cada 30 segundos.
+- La eliminación usa `DELETE /api/chat/conversations/:conversationId/messages/:messageId`; solo el autor puede eliminar sus mensajes y Socket.io avisa a los clientes presentes en esa conversación.
+- Pendiente la prueba end-to-end con dos usuarios para confirmar actualización de la campana y desaparición simultánea del mensaje.
+
 ## Estado actual
 
 ### Bugs de perfil resueltos (Parte 1)
@@ -25,10 +53,11 @@ Plan de pruebas — Chat en tiempo real (pendiente, tareas T3-T4)
  Integration test: enviar un mensaje desde una sesión y confirmar que llega en tiempo real a otra sesión (dos instancias de la app corriendo).
  Widget test: chat_detail_screen.dart muestra correctamente mensajes entrantes y salientes.
  Confirmar que flutter analyze sigue sin errores tras integrar el cliente Socket.io.
-Plan de pruebas — Notificaciones push (pendiente, tareas T7-T10)
- Prueba manual en dispositivo Android real: permiso de notificaciones se solicita correctamente tras login.
- Prueba manual: notificación llega en foreground y en background.
- Confirmar que el login con Google sigue funcionando sin cambios tras estos ajustes (zona restringida).
+Plan de pruebas — Notificaciones push (implementación lista; validación en dispositivo pendiente)
+ Aplicar `npx prisma db push` en el backend antes de registrar tokens.
+ Probar el permiso y la entrega en foreground/background en Android; para web usar `--dart-define=FCM_VAPID_KEY=...`.
+ Enviar mensaje, solicitud y reseña desde otra cuenta; confirmar la bandeja del usuario receptor y marcar como leída.
+ Reprobar con una cuenta Google nueva: debe entrar al inicio, sincronizar su UID y acceder a perfiles, chat y servicios.
 Casos de prueba prioritarios (heredados del documento técnico, TC-01 a TC-10)
 ID	Caso	Prioridad	Estado
 TC-01	Registro de usuario con datos válidos	Alta	Pendiente de documentar

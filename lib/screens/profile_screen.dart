@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -38,9 +39,9 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
                   const SizedBox(height: 16),
-                  Text('Error al cargar el perfil', style: AppTextStyles.bodyMd),
+                  LocalizedText('Error al cargar el perfil', style: AppTextStyles.bodyMd),
                   const SizedBox(height: 8),
-                  Text(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+                  LocalizedText(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
                 ],
               ),
             );
@@ -52,7 +53,7 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.login_rounded, size: 48, color: AppColors.onSurfaceVariant),
                   const SizedBox(height: 16),
-                  Text(
+                  LocalizedText(
                     'No has iniciado sesión',
                     style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
                     textAlign: TextAlign.center,
@@ -92,7 +93,7 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        Text('Perfil', style: AppTextStyles.titleLg.copyWith(color: AppColors.onPrimary)),
+                        LocalizedText('Perfil', style: AppTextStyles.titleLg.copyWith(color: AppColors.onPrimary)),
                         const Spacer(),
                         Container(
                           decoration: BoxDecoration(
@@ -126,7 +127,7 @@ class ProfileScreen extends StatelessWidget {
                               fallbackInitial: user.name.isNotEmpty ? user.name[0] : 'U',
                             ),
                             const SizedBox(height: 16),
-                            Text(user.name, style: AppTextStyles.headlineMd),
+                            LocalizedText(user.name, style: AppTextStyles.headlineMd),
                             if ((user.location ?? '').isNotEmpty) ...[
                               const SizedBox(height: 8),
                               Row(
@@ -134,7 +135,7 @@ class ProfileScreen extends StatelessWidget {
                                 children: [
                                   Icon(Icons.location_on_outlined, size: 16, color: AppColors.onSurfaceVariant),
                                   const SizedBox(width: 4),
-                                  Text(user.location ?? '', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                                  LocalizedText(user.location ?? '', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
                                 ],
                               ),
                             ],
@@ -152,11 +153,11 @@ class ProfileScreen extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            _StatItem(label: 'Servicios', value: '${user.servicesCount ?? 0}'),
+                            _StatItem(label: 'Servicios'.tr, value: '${user.servicesCount ?? 0}'),
                             Container(width: 1, height: 40, color: AppColors.outlineVariant.withValues(alpha: 0.5)),
-                            _StatItem(label: 'Reseñas', value: (user.rating ?? 0).toStringAsFixed(1)),
+                            _StatItem(label: 'Reseñas'.tr, value: (user.rating ?? 0).toStringAsFixed(1)),
                             Container(width: 1, height: 40, color: AppColors.outlineVariant.withValues(alpha: 0.5)),
-                            _StatItem(label: 'Calificación', value: (user.rating ?? 0).toStringAsFixed(1)),
+                            _StatItem(label: 'Calificación'.tr, value: (user.rating ?? 0).toStringAsFixed(1)),
                           ],
                         ),
                       ),
@@ -168,7 +169,7 @@ class ProfileScreen extends StatelessWidget {
                             Navigator.push(context, MaterialPageRoute(builder: (_) => const MyServicesScreen()));
                           },
                           icon: const Icon(Icons.work_outline_rounded),
-                          label: const Text('Mis servicios'),
+                          label: const LocalizedText('Mis servicios'),
                           style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.onPrimary),
                         ),
                       ),
@@ -181,7 +182,7 @@ class ProfileScreen extends StatelessWidget {
                                 Navigator.push(context, MaterialPageRoute(builder: (_) => const PortfolioScreen()));
                               },
                               icon: const Icon(Icons.photo_library_outlined),
-                              label: const Text('Portafolio'),
+                              label: const LocalizedText('Portafolio'),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -191,7 +192,7 @@ class ProfileScreen extends StatelessWidget {
                                 Navigator.push(context, MaterialPageRoute(builder: (_) => const ReviewsScreen()));
                               },
                               icon: const Icon(Icons.rate_review_outlined),
-                              label: const Text('Reseñas'),
+                              label: const LocalizedText('Reseñas'),
                             ),
                           ),
                         ],
@@ -204,7 +205,7 @@ class ProfileScreen extends StatelessWidget {
                             Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
                           },
                           icon: const Icon(Icons.notifications_rounded),
-                          label: const Text('Notificaciones'),
+                          label: const LocalizedText('Notificaciones'),
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -239,8 +240,8 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value, style: AppTextStyles.headlineMd.copyWith(color: AppColors.primary)),
-        Text(label, style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+        LocalizedText(value, style: AppTextStyles.headlineMd.copyWith(color: AppColors.primary)),
+        LocalizedText(label, style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
       ],
     );
   }

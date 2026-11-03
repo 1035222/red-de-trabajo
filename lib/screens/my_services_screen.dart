@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -41,7 +42,7 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
     } on Exception catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar servicios: ${e.toString().replaceFirst('Exception: ', '')}')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LocalizedText('Error al cargar servicios: ${e.toString().replaceFirst('Exception: ', '')}')));
       }
     }
   }
@@ -58,7 +59,7 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.visibility_outlined, color: AppColors.primary),
-                title: const Text('Ver detalle'),
+                title: const LocalizedText('Ver detalle'),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(context, MaterialPageRoute(builder: (_) => ServiceDetailScreen(service: service)));
@@ -66,15 +67,15 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.edit_outlined, color: AppColors.primary),
-                title: const Text('Editar'),
+                title: const LocalizedText('Editar'),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(context, MaterialPageRoute(builder: (_) => EditServiceScreen(service: service)));
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.delete_outlined, color: AppColors.error),
-                title: const Text('Eliminar', style: TextStyle(color: AppColors.error)),
+                leading: Icon(Icons.delete_outlined, color: AppColors.error),
+                title: LocalizedText('Eliminar', style: TextStyle(color: AppColors.error)),
                 onTap: () {
                   Navigator.pop(context);
                   _confirmDelete(context, service);
@@ -92,11 +93,11 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Eliminar servicio'),
-          content: Text('¿Estás seguro de que deseas eliminar "${service.title}"?'),
+          title: const LocalizedText('Eliminar servicio'),
+          content: LocalizedText('¿Estás seguro de que deseas eliminar "${service.title}"?'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar', style: TextStyle(color: AppColors.error))),
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const LocalizedText('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(context, true), child: LocalizedText('Eliminar', style: TextStyle(color: AppColors.error))),
           ],
         );
       },
@@ -106,11 +107,11 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
         await _serviceRepository.deleteService(service.id);
         setState(() => _myServices.removeWhere((s) => s.id == service.id));
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('"${service.title}" eliminado')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LocalizedText('"${service.title}" eliminado')));
         }
       } on Exception catch (e) {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LocalizedText('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')));
         }
       }
     }
@@ -124,7 +125,7 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
-        title: Text('Mis servicios', style: AppTextStyles.titleLg),
+        title: LocalizedText('Mis servicios', style: AppTextStyles.titleLg),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -143,9 +144,9 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
                         child: Icon(Icons.work_outline_rounded, size: 48, color: AppColors.primary),
                       ),
                       const SizedBox(height: 24),
-                      Text('No tienes servicios publicados', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurfaceVariant)),
+                      LocalizedText('No tienes servicios publicados', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurfaceVariant)),
                       const SizedBox(height: 8),
-                      Text('Publica tu primer servicio para comenzar', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                      LocalizedText('Publica tu primer servicio para comenzar', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
                     ],
                   ),
                 )

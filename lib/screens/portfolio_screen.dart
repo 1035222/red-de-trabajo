@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -20,7 +21,7 @@ class PortfolioScreen extends StatelessWidget {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
-        title: Text('Portafolio', style: AppTextStyles.titleLg),
+        title: LocalizedText('Portafolio', style: AppTextStyles.titleLg),
       ),
       body: FutureBuilder<List<PortfolioItem>>(
         future: _loadUserPortfolio(profileRepository, sessionService),
@@ -35,9 +36,9 @@ class PortfolioScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
                   const SizedBox(height: 16),
-                  Text('Error al cargar portafolio', style: AppTextStyles.bodyMd),
+                  LocalizedText('Error al cargar portafolio', style: AppTextStyles.bodyMd),
                   const SizedBox(height: 8),
-                  Text(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+                  LocalizedText(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
                 ],
               ),
             );
@@ -58,9 +59,9 @@ class PortfolioScreen extends StatelessWidget {
                     child: Icon(Icons.photo_library_outlined, size: 48, color: AppColors.primary),
                   ),
                   const SizedBox(height: 24),
-                  Text('No tienes proyectos en tu portafolio', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurfaceVariant)),
+                  LocalizedText('No tienes proyectos en tu portafolio', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurfaceVariant)),
                   const SizedBox(height: 8),
-                  Text('Agrega tus trabajos más destacados', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                  LocalizedText('Agrega tus trabajos más destacados', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
                 ],
               ),
             );
@@ -103,7 +104,7 @@ class PortfolioScreen extends StatelessWidget {
                     ),
                     Padding(
                       padding: const EdgeInsets.all(14),
-                      child: Text(item.title, style: AppTextStyles.labelMd.copyWith(fontWeight: FontWeight.w600)),
+                      child: LocalizedText(item.title, style: AppTextStyles.labelMd.copyWith(fontWeight: FontWeight.w600)),
                     ),
                   ],
                 ),

@@ -50,6 +50,19 @@ class ApiChatRepository implements ChatRepository {
   }
 
   @override
+  Future<void> deleteMessage(String conversationId, String messageId) async {
+    final response = await _api.delete(
+      '/chat/conversations/${Uri.encodeComponent(conversationId)}'
+      '/messages/${Uri.encodeComponent(messageId)}',
+    );
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Error al eliminar mensaje (${response.statusCode}): ${response.body}',
+      );
+    }
+  }
+
+  @override
   Future<ChatMessage> sendMessage(String conversationId, String text) async {
     await _ensureUser();
     final response = await _api.post('/chat/conversations/$conversationId/messages', {'text': text});

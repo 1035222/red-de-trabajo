@@ -310,6 +310,28 @@ class MockChatRepository implements ChatRepository {
   }
 
   @override
+  Future<void> deleteMessage(String conversationId, String messageId) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final messages = _chatHistory[conversationId];
+    if (messages == null) return;
+    messages.removeWhere((message) => message.id == messageId && message.isMe);
+    final conversation = _conversations.firstWhere(
+      (item) => item.id == conversationId,
+    );
+    final lastMessage = messages.isEmpty ? null : messages.last;
+    final updated = Message(
+      id: conversation.id,
+      name: conversation.name,
+      lastMessage: lastMessage?.text ?? '',
+      time: lastMessage == null ? '' : 'Ahora',
+      avatarUrl: conversation.avatarUrl,
+      unread: conversation.unread,
+    );
+    _conversations.removeWhere((item) => item.id == conversationId);
+    _conversations.insert(0, updated);
+  }
+
+  @override
   Future<ChatMessage> sendMessage(String conversationId, String text) async {
     await Future.delayed(const Duration(milliseconds: 200));
     final message = ChatMessage(
@@ -448,6 +470,12 @@ class MockNotificationRepository implements NotificationRepository {
   Future<List<AppNotification>> getNotifications() async {
     await Future.delayed(const Duration(milliseconds: 300));
     return List.unmodifiable(_notifications);
+  }
+
+  @override
+  Future<int> getUnreadCount() async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return _notifications.where((notification) => !notification.read).length;
   }
 
   @override

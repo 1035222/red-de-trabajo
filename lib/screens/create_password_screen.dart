@@ -1,4 +1,7 @@
+import '../l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
+
 import '../config/api_config.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -12,7 +15,11 @@ class CreatePasswordScreen extends StatefulWidget {
   final String email;
   final String name;
 
-  const CreatePasswordScreen({super.key, required this.email, required this.name});
+  const CreatePasswordScreen({
+    super.key,
+    required this.email,
+    required this.name,
+  });
 
   @override
   State<CreatePasswordScreen> createState() => _CreatePasswordScreenState();
@@ -35,7 +42,9 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
   Future<void> _handleCreatePassword() async {
     if (!_formKey.currentState!.validate()) return;
     if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Las contraseñas no coinciden')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: LocalizedText('Las contraseñas no coinciden')),
+      );
       return;
     }
 
@@ -43,52 +52,54 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       final authService = FirebaseAuthService();
-      await authService.linkEmailAndPassword(widget.email, _passwordController.text.trim());
-
-      final user = FirebaseAuthService().currentUser;
-      if (user != null) {
-        try {
-          await FirebaseAuthService().syncUserWithBackend(ApiConfig.baseUrl);
-        } on Exception catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Contraseña creada. Sync backend: ${e.toString().replaceFirst('Exception: ', '')}')));
-          }
-        }
-      }
+      await authService.linkEmailAndPassword(
+        widget.email,
+        _passwordController.text.trim(),
+      );
 
       if (!mounted) return;
       final sessionUser = FirebaseAuthService().currentUser;
-      if (sessionUser != null) {
-        final idToken = await sessionUser.getIdToken();
-        Map<String, dynamic> backendData;
-        try {
-          backendData = await FirebaseAuthService().syncUserWithBackend(ApiConfig.baseUrl);
-        } on Exception catch (e) {
-          backendData = {
-            'id': sessionUser.uid,
-            'name': sessionUser.displayName ?? 'Usuario',
-            'email': sessionUser.email ?? '',
-            'avatarUrl': sessionUser.photoURL ?? '',
-          };
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sync backend: ${e.toString().replaceFirst('Exception: ', '')}')));
-          }
-        }
-        final appUser = AppUser(
-          id: backendData['id'] ?? sessionUser.uid,
-          name: backendData['name'] ?? sessionUser.displayName ?? 'Usuario',
-          email: backendData['email'] ?? sessionUser.email ?? '',
-          avatarUrl: backendData['avatarUrl'] ?? sessionUser.photoURL ?? '',
+      if (sessionUser == null) {
+        throw Exception(
+          'No hay usuario autenticado para asociar la contraseña',
         );
-        await SessionService().saveSession(user: appUser, token: idToken ?? sessionUser.uid, authorized: true);
       }
-      messenger.showSnackBar(const SnackBar(content: Text('Contraseña creada exitosamente')));
+      final backendData = await authService.syncUserWithBackend(
+        ApiConfig.baseUrl,
+      );
+      final idToken = await sessionUser.getIdToken();
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception('Firebase no pudo generar el token de acceso');
+      }
+      final appUser = AppUser(
+        id: backendData['id'] ?? sessionUser.uid,
+        name: backendData['name'] ?? sessionUser.displayName ?? 'Usuario',
+        email: backendData['email'] ?? sessionUser.email ?? '',
+        avatarUrl: backendData['avatarUrl'] ?? sessionUser.photoURL ?? '',
+      );
+      await SessionService().saveSession(
+        user: appUser,
+        token: idToken,
+        authorized: true,
+      );
+      messenger.showSnackBar(
+        const SnackBar(
+          content: LocalizedText('Contraseña creada exitosamente'),
+        ),
+      );
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
       }
     } on Exception catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+      messenger.showSnackBar(
+        SnackBar(
+          content: LocalizedText(e.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -101,7 +112,10 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SafeArea(
         child: Center(
@@ -114,47 +128,70 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Crea tu contraseña', textAlign: TextAlign.center, style: AppTextStyles.headlineMd),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Para ${widget.email}',
+                    LocalizedText(
+                      'Crea tu contraseña',
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                      style: AppTextStyles.headlineMd,
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    LocalizedText(
+                      'Para ${widget.email}',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyMd.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    LocalizedText(
                       'Asocia una contraseña a tu cuenta para iniciar sesión más rápido la próxima vez.',
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant, height: 1.5),
+                      style: AppTextStyles.bodyMd.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                        height: 1.5,
+                      ),
                     ),
                     const SizedBox(height: 32),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
-                        labelText: 'Contraseña',
+                        labelText: 'Contraseña'.tr,
                         prefixIcon: const Icon(Icons.lock_outlined),
                         suffixIcon: IconButton(
-                          icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
                         ),
                         border: const OutlineInputBorder(),
                       ),
-                      validator: (value) => (value == null || value.length < 6) ? 'Mínimo 6 caracteres' : null,
+                      validator: (value) => (value == null || value.length < 6)
+                          ? 'Mínimo 6 caracteres'
+                          : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _confirmPasswordController,
                       obscureText: _obscurePassword,
-                      decoration: const InputDecoration(
-                        labelText: 'Confirmar contraseña',
+                      decoration: InputDecoration(
+                        labelText: 'Confirmar contraseña'.tr,
                         prefixIcon: Icon(Icons.lock_outlined),
                         border: OutlineInputBorder(),
                       ),
-                      validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido' : null,
+                      validator: (value) => (value == null || value.isEmpty)
+                          ? 'Campo requerido'.tr
+                          : null,
                     ),
                     const SizedBox(height: 24),
-                    RTPrimaryButton(text: 'Guardar contraseña', onPressed: _handleCreatePassword, isLoading: _isLoading),
+                    RTPrimaryButton(
+                      text: 'Guardar contraseña'.tr,
+                      onPressed: _handleCreatePassword,
+                      isLoading: _isLoading,
+                    ),
                   ],
                 ),
               ),

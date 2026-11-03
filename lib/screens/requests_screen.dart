@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../theme/app_colors.dart';
@@ -29,7 +30,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
-        title: Text('Solicitudes', style: AppTextStyles.titleLg),
+        title: LocalizedText('Solicitudes', style: AppTextStyles.titleLg),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _loadRequests(),
@@ -54,9 +55,9 @@ class _RequestsScreenState extends State<RequestsScreen> {
                     child: Icon(Icons.inbox_outlined, size: 48, color: AppColors.primary),
                   ),
                   const SizedBox(height: 24),
-                  Text('No tienes solicitudes pendientes', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurfaceVariant)),
+                  LocalizedText('No tienes solicitudes pendientes', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurfaceVariant)),
                   const SizedBox(height: 8),
-                  Text('Las solicitudes de servicio aparecerán aquí', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                  LocalizedText('Las solicitudes de servicio aparecerán aquí', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
                 ],
               ),
             );
@@ -72,8 +73,8 @@ class _RequestsScreenState extends State<RequestsScreen> {
                 padding: const EdgeInsets.only(bottom: 16),
                 child: ListTile(
                   tileColor: AppColors.surfaceContainerLowest,
-                  title: Text(service['title'] as String? ?? 'Servicio'),
-                  subtitle: Text('Estado: ${request['status'] ?? 'pending'}'),
+                  title: LocalizedText(service['title'] as String? ?? 'Servicio'),
+                  subtitle: LocalizedText('Estado: ${request['status'] ?? 'pending'}'),
                   leading: const Icon(Icons.assignment_outlined),
                 ),
               );

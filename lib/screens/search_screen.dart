@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
@@ -74,7 +75,7 @@ class _SearchScreenState extends State<SearchScreen> {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
+            content: LocalizedText(
               'Error en la búsqueda: ${e.toString().replaceFirst('Exception: ', '')}',
             ),
           ),
@@ -116,7 +117,7 @@ class _SearchScreenState extends State<SearchScreen> {
               children: [
                 Row(
                   children: [
-                    Text('Filtrar servicios', style: AppTextStyles.titleLg),
+                    LocalizedText('Filtrar servicios', style: AppTextStyles.titleLg),
                     const Spacer(),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
@@ -130,8 +131,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       child: TextField(
                         controller: _minPriceController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Precio mínimo',
+                        decoration: InputDecoration(
+                          labelText: 'Precio mínimo'.tr,
                           prefixText: '\$ ',
                         ),
                       ),
@@ -141,8 +142,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       child: TextField(
                         controller: _maxPriceController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Precio máximo',
+                        decoration: InputDecoration(
+                          labelText: 'Precio máximo'.tr,
                           prefixText: '\$ ',
                         ),
                       ),
@@ -153,8 +154,8 @@ class _SearchScreenState extends State<SearchScreen> {
                 TextField(
                   controller: _locationController,
                   textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(
-                    labelText: 'Ubicación',
+                  decoration: InputDecoration(
+                    labelText: 'Ubicación'.tr,
                     prefixIcon: Icon(Icons.location_on_outlined),
                   ),
                 ),
@@ -172,7 +173,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         minPrice > maxPrice) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text(
+                          content: LocalizedText(
                             'El precio mínimo no puede superar al máximo',
                           ),
                         ),
@@ -188,7 +189,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     ));
                   },
                   icon: const Icon(Icons.check_rounded),
-                  label: const Text('Aplicar filtros'),
+                  label: const LocalizedText('Aplicar filtros'),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, (
@@ -196,7 +197,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     maxPrice: null,
                     location: null,
                   )),
-                  child: const Text('Limpiar filtros'),
+                  child: const LocalizedText('Limpiar filtros'),
                 ),
               ],
             ),
@@ -233,11 +234,11 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: 'Buscar servicios...',
+                      hintText: 'Buscar servicios...'.tr,
                       hintStyle: AppTextStyles.bodyMd.copyWith(
                         color: AppColors.onSurfaceVariant,
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.search_rounded,
                         color: AppColors.onSurfaceVariant,
                       ),
@@ -270,7 +271,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
                 child: PopupMenuButton<String>(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.sort_rounded,
                     color: AppColors.onSurface,
                   ),
@@ -281,19 +282,19 @@ class _SearchScreenState extends State<SearchScreen> {
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 'relevancia',
-                      child: Text('Relevancia'),
+                      child: LocalizedText('Relevancia'),
                     ),
                     const PopupMenuItem(
                       value: 'precio_asc',
-                      child: Text('Precio: menor a mayor'),
+                      child: LocalizedText('Precio: menor a mayor'),
                     ),
                     const PopupMenuItem(
                       value: 'precio_desc',
-                      child: Text('Precio: mayor a menor'),
+                      child: LocalizedText('Precio: mayor a menor'),
                     ),
                     const PopupMenuItem(
                       value: 'calificacion',
-                      child: Text('Mejor calificados'),
+                      child: LocalizedText('Mejor calificados'),
                     ),
                   ],
                 ),
@@ -302,9 +303,9 @@ class _SearchScreenState extends State<SearchScreen> {
               Badge(
                 isLabelVisible:
                     _minPrice != null || _maxPrice != null || _location != null,
-                label: const Text(''),
+                label: const LocalizedText(''),
                 child: IconButton(
-                  tooltip: 'Filtros',
+                  tooltip: 'Filtros'.tr,
                   onPressed: _openFilters,
                   icon: const Icon(Icons.tune_rounded),
                 ),
@@ -333,7 +334,7 @@ class _SearchScreenState extends State<SearchScreen> {
               return Padding(
                 padding: const EdgeInsets.only(right: 10),
                 child: FilterChip(
-                  label: Text(
+                  label: LocalizedText(
                     label,
                     style: TextStyle(
                       color: isSelected
@@ -369,7 +370,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         color: AppColors.outline,
                       ),
                       const SizedBox(height: 16),
-                      Text(
+                      LocalizedText(
                         'No se encontraron resultados',
                         style: AppTextStyles.bodyMd.copyWith(
                           color: AppColors.onSurfaceVariant,
@@ -432,7 +433,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Icon(Icons.arrow_back_rounded, color: AppColors.onSurface),
           ),
         ),
-        title: Text('Buscar', style: AppTextStyles.titleLg),
+        title: LocalizedText('Buscar', style: AppTextStyles.titleLg),
       ),
       body: body,
     );

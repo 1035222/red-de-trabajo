@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -15,20 +16,25 @@ class FirebaseAuthService {
   Future<User?> signInWithGoogle() async {
     try {
       if (kIsWeb) {
-        final UserCredential userCredential = await _auth.signInWithPopup(GoogleAuthProvider());
+        final UserCredential userCredential = await _auth.signInWithPopup(
+          GoogleAuthProvider(),
+        );
         return userCredential.user;
       }
 
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return null;
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(
+        credential,
+      );
       return userCredential.user;
     } on FirebaseAuthException catch (e, stackTrace) {
       debugPrint('ERROR GOOGLE SIGN-IN: $e');
@@ -43,10 +49,14 @@ class FirebaseAuthService {
     }
   }
 
-  Future<User?> signInWithEmailAndPassword(String email, String password) async {
+  Future<User?> signInWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     try {
       debugPrint('EMAIL SIGN-IN attempt for: $email');
-      final UserCredential userCredential = await _auth.signInWithEmailAndPassword(email: email, password: password);
+      final UserCredential userCredential = await _auth
+          .signInWithEmailAndPassword(email: email, password: password);
       debugPrint('EMAIL SIGN-IN success uid=${userCredential.user?.uid}');
       return userCredential.user;
     } on FirebaseAuthException catch (e, stackTrace) {
@@ -62,12 +72,38 @@ class FirebaseAuthService {
     }
   }
 
+  Future<User> registerWithEmailAndPassword(
+    String name,
+    String email,
+    String password,
+  ) async {
+    try {
+      final UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
+            email: email.trim().toLowerCase(),
+            password: password,
+          );
+      final user = userCredential.user;
+      if (user == null) {
+        throw Exception('Firebase no devolvió el usuario creado');
+      }
+
+      await user.updateDisplayName(name.trim());
+      return user;
+    } on FirebaseAuthException catch (e) {
+      throw _mapFirebaseError(e);
+    }
+  }
+
   Future<void> linkEmailAndPassword(String email, String password) async {
     try {
       final user = _auth.currentUser;
       if (user == null) throw Exception('No hay usuario autenticado');
 
-      final credential = EmailAuthProvider.credential(email: email, password: password);
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
       await user.linkWithCredential(credential);
     } on FirebaseAuthException catch (e, stackTrace) {
       debugPrint('ERROR LINK CREDENTIAL: $e');
@@ -99,49 +135,50 @@ class FirebaseAuthService {
     final user = _auth.currentUser;
     if (user == null) throw Exception('No hay usuario autenticado');
 
-    final idToken = await user.getIdToken();
-    final tokenForLog = (idToken == null) ? 'null' : '${idToken.substring(0, 12)}...';
-    debugPrint('SYNC BACKEND uid=${user.uid} email=${user.email} token_present=${idToken != null} token_prefix=$tokenForLog');
+    final idToken = await user.getIdToken(true);
+    if (idToken == null || idToken.isEmpty) {
+      throw Exception('Firebase no pudo generar el token de acceso');
+    }
 
     try {
-      final response = await http.post(
-        Uri.parse('$backendUrl/api/users/sync'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-        body: jsonEncode({
-          'uid': user.uid,
-          'email': user.email ?? '',
-          'name': user.displayName ?? '',
-          'avatarUrl': user.photoURL ?? '',
-        }),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('$backendUrl/api/users/sync'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+            body: jsonEncode({
+              'uid': user.uid,
+              'email': user.email ?? '',
+              'name': user.displayName ?? '',
+              'avatarUrl': user.photoURL ?? '',
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
 
-      debugPrint('SYNC BACKEND status=${response.statusCode} body=${response.body}');
+      debugPrint(
+        'SYNC BACKEND status=${response.statusCode}',
+      );
       if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+        final responseData = jsonDecode(response.body);
+        if (responseData is Map<String, dynamic>) return responseData;
+        throw Exception('La API devolvió datos de usuario inválidos');
       }
 
       if (response.statusCode == 401) {
-        debugPrint('SYNC BACKEND: token inválido o expirado, usando datos locales');
-        return _localUserData(user);
+        throw Exception(
+          'La API rechazó el token de Firebase. Verifica que el frontend y el backend usan el proyecto Firebase red-de-trabajo.',
+        );
       }
 
-      throw Exception('No se pudo sincronizar el usuario con el backend (status ${response.statusCode})');
-    } on Exception catch (e) {
-      debugPrint('SYNC BACKEND error: $e');
-      return _localUserData(user);
+      throw Exception(
+        'No se pudo sincronizar el usuario con el backend (${response.statusCode}): ${response.body}',
+      );
+    } on Exception catch (error) {
+      debugPrint('SYNC BACKEND error: $error');
+      rethrow;
     }
-  }
-
-  Map<String, dynamic> _localUserData(User user) {
-    return {
-      'id': user.uid,
-      'name': user.displayName ?? 'Usuario',
-      'email': user.email ?? '',
-      'avatarUrl': user.photoURL ?? '',
-    };
   }
 
   Exception _mapFirebaseError(FirebaseAuthException e) {
@@ -161,7 +198,11 @@ class FirebaseAuthService {
       case 'too-many-requests':
         return Exception('Demasiados intentos, intenta más tarde');
       case 'operation-not-allowed':
-        return Exception('Operación no permitida');
+        return Exception(
+          'Activa el acceso con correo y contraseña en Firebase Console',
+        );
+      case 'network-request-failed':
+        return Exception('No hay conexión. Revisa tu conexión a Internet');
       case 'invalid-credential':
         return Exception('Credenciales inválidas');
       case 'account-exists-with-different-credential':

@@ -12,6 +12,8 @@ class SocketService {
   final SessionService _sessionService = SessionService();
   final StreamController<Map<String, dynamic>> _messageController =
       StreamController.broadcast();
+  final StreamController<Map<String, dynamic>> _messageDeletedController =
+      StreamController.broadcast();
   final StreamController<Map<String, dynamic>> _typingController =
       StreamController.broadcast();
   final StreamController<String> _errorController =
@@ -20,6 +22,8 @@ class SocketService {
   Future<void>? _connectionFuture;
 
   Stream<Map<String, dynamic>> get messageStream => _messageController.stream;
+  Stream<Map<String, dynamic>> get messageDeletedStream =>
+      _messageDeletedController.stream;
   Stream<Map<String, dynamic>> get typingStream => _typingController.stream;
   Stream<String> get errorStream => _errorController.stream;
   bool get isConnected => _isConnected;
@@ -82,6 +86,10 @@ class SocketService {
       _messageController.add(data as Map<String, dynamic>);
     });
 
+    _socket!.on('message_deleted', (data) {
+      _messageDeletedController.add(data as Map<String, dynamic>);
+    });
+
     _socket!.on('typing', (data) {
       _typingController.add(data as Map<String, dynamic>);
     });
@@ -142,6 +150,7 @@ class SocketService {
   void dispose() {
     disconnect();
     _messageController.close();
+    _messageDeletedController.close();
     _typingController.close();
     _errorController.close();
   }

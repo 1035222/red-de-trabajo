@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -21,7 +22,7 @@ class ReviewsScreen extends StatelessWidget {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
-        title: Text('Reseñas', style: AppTextStyles.titleLg),
+        title: LocalizedText('Reseñas', style: AppTextStyles.titleLg),
       ),
       body: FutureBuilder<List<Review>>(
         future: _loadUserReviews(profileRepository, sessionService),
@@ -36,9 +37,9 @@ class ReviewsScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
                   const SizedBox(height: 16),
-                  Text('Error al cargar reseñas', style: AppTextStyles.bodyMd),
+                  LocalizedText('Error al cargar reseñas', style: AppTextStyles.bodyMd),
                   const SizedBox(height: 8),
-                  Text(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+                  LocalizedText(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
                 ],
               ),
             );
@@ -59,9 +60,9 @@ class ReviewsScreen extends StatelessWidget {
                     child: Icon(Icons.rate_review_outlined, size: 48, color: AppColors.primary),
                   ),
                   const SizedBox(height: 24),
-                  Text('Aún no tienes reseñas', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurfaceVariant)),
+                  LocalizedText('Aún no tienes reseñas', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurfaceVariant)),
                   const SizedBox(height: 8),
-                  Text('Las reseñas de tus servicios aparecerán aquí', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                  LocalizedText('Las reseñas de tus servicios aparecerán aquí', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
                 ],
               ),
             );
@@ -94,7 +95,7 @@ class ReviewsScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(review.userName, style: AppTextStyles.labelMd.copyWith(fontWeight: FontWeight.w600)),
+                              LocalizedText(review.userName, style: AppTextStyles.labelMd.copyWith(fontWeight: FontWeight.w600)),
                               Row(
                                 children: [
                                   ...List.generate(5, (index) {
@@ -105,7 +106,7 @@ class ReviewsScreen extends StatelessWidget {
                                     );
                                   }),
                                   const SizedBox(width: 8),
-                                  Text(_formatDate(review.date), style: AppTextStyles.labelSm.copyWith(color: AppColors.onSurfaceVariant)),
+                                  LocalizedText(_formatDate(review.date), style: AppTextStyles.labelSm.copyWith(color: AppColors.onSurfaceVariant)),
                                 ],
                               ),
                             ],
@@ -114,7 +115,7 @@ class ReviewsScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Text(review.comment, style: AppTextStyles.bodyMd),
+                    LocalizedText(review.comment, style: AppTextStyles.bodyMd),
                   ],
                 ),
               );

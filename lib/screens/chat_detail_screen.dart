@@ -1,12 +1,16 @@
+import '../l10n/app_localizations.dart';
+
 import 'dart:async';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:cross_file/cross_file.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/chat_message.dart';
@@ -26,7 +30,8 @@ class ChatDetailScreen extends StatefulWidget {
   State<ChatDetailScreen> createState() => _ChatDetailScreenState();
 }
 
-class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProviderStateMixin {
+class _ChatDetailScreenState extends State<ChatDetailScreen>
+    with TickerProviderStateMixin {
   final _messageController = TextEditingController();
   final _chatRepository = RepositoryProvider.chatRepository;
   final _scrollController = ScrollController();
@@ -37,6 +42,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   final _audioPlayer = AudioPlayer();
   DateTime? _recordingStartedAt;
   StreamSubscription<Map<String, dynamic>>? _messageSubscription;
+  StreamSubscription<Map<String, dynamic>>? _messageDeletedSubscription;
   StreamSubscription<Map<String, dynamic>>? _typingSubscription;
   StreamSubscription<String>? _errorSubscription;
   String? _currentUserId;
@@ -58,7 +64,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       final session = await _sessionService.getSession();
       _currentUserId = session?.user?.id;
       await _socketService.connect();
-      _messageSubscription = _socketService.messageStream.listen(_onSocketMessage);
+      _messageSubscription = _socketService.messageStream.listen(
+        _onSocketMessage,
+      );
+      _messageDeletedSubscription = _socketService.messageDeletedStream.listen(
+        _onSocketMessageDeleted,
+      );
       _typingSubscription = _socketService.typingStream.listen(_onSocketTyping);
       _errorSubscription = _socketService.errorStream.listen(_onSocketError);
 
@@ -85,6 +96,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     }
   }
 
+  void _onSocketMessageDeleted(Map<String, dynamic> data) {
+    if (data['conversationId'] != widget.conversationId || !mounted) return;
+    final messageId = data['messageId']?.toString();
+    if (messageId == null) return;
+    setState(() {
+      _messages.removeWhere((message) => message.id == messageId);
+      _hasMessages = _messages.isNotEmpty;
+    });
+  }
+
   void _addMessageIfMissing(ChatMessage message) {
     if (_messages.any((existing) => existing.id == message.id)) return;
     _messages.add(message);
@@ -106,6 +127,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   @override
   void dispose() {
     _messageSubscription?.cancel();
+    _messageDeletedSubscription?.cancel();
     _typingSubscription?.cancel();
     _errorSubscription?.cancel();
     _socketService.disconnect();
@@ -121,7 +143,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       final conversations = await _chatRepository.getConversations();
       final conversation = conversations.firstWhere(
         (c) => c.id == widget.conversationId,
-        orElse: () => Message(id: widget.conversationId, name: 'Chat', lastMessage: '', time: '', avatarUrl: '', unread: false),
+        orElse: () => Message(
+          id: widget.conversationId,
+          name: 'Chat',
+          lastMessage: '',
+          time: '',
+          avatarUrl: '',
+          unread: false,
+        ),
       );
       if (mounted) {
         setState(() {
@@ -134,7 +163,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     } on Exception catch (e) {
       if (mounted) {
         setState(() => _hasMessages = true);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar chat: ${e.toString().replaceFirst('Exception: ', '')}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: LocalizedText(
+              'Error al cargar chat: ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
       }
     }
   }
@@ -142,21 +177,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty || _isSending) return;
-    
+
     setState(() {
       _isSending = true;
-      _hasMessages = true;
     });
-    
+
     try {
       _messageController.clear();
-      await _socketService.sendMessage(conversationId: widget.conversationId, text: text);
+      await _socketService.sendMessage(
+        conversationId: widget.conversationId,
+        text: text,
+      );
       if (mounted) {
         setState(() => _hasMessages = true);
       }
     } on Exception catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al enviar mensaje: ${e.toString().replaceFirst('Exception: ', '')}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: LocalizedText(
+              'Error al enviar mensaje: ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSending = false);
@@ -166,17 +209,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   Future<void> _sendLocation(double lat, double lng, String address) async {
     if (_isSending) return;
     setState(() => _isSending = true);
-    
+
     try {
       await _socketService.sendMessage(
         conversationId: widget.conversationId,
-        text: 'Ubicación compartida',
+        text: 'Ubicación compartida'.tr,
         type: 'location',
         extra: {'latitude': lat, 'longitude': lng, 'address': address},
       );
     } on Exception catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al enviar ubicación: ${e.toString().replaceFirst('Exception: ', '')}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: LocalizedText(
+              'Error al enviar ubicación: ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSending = false);
@@ -199,7 +248,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) {
         return SafeArea(
           child: Padding(
@@ -215,12 +266,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                       color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+                    child: Icon(
+                      Icons.photo_library_rounded,
+                      color: AppColors.primary,
+                    ),
                   ),
-                  title: Text('Foto', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurface)),
+                  title: LocalizedText(
+                    'Foto',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.onSurface,
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Las fotos del chat estarán disponibles próximamente')));
+                    _pickAndSendPhoto();
                   },
                 ),
                 ListTile(
@@ -231,9 +290,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                       color: AppColors.secondary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.location_on_rounded, color: AppColors.secondary),
+                    child: Icon(
+                      Icons.location_on_rounded,
+                      color: AppColors.secondary,
+                    ),
                   ),
-                  title: Text('Ubicación', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurface)),
+                  title: LocalizedText(
+                    'Ubicación',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.onSurface,
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _showLocationPicker();
@@ -247,20 +314,85 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     );
   }
 
+  Future<void> _pickAndSendPhoto() async {
+    if (_isSending) return;
+    try {
+      final photo = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+      if (photo == null || !mounted) return;
+
+      final size = await photo.length();
+      if (size == 0) {
+        throw Exception('La foto seleccionada está vacía');
+      }
+      if (size > 15 * 1024 * 1024) {
+        throw Exception('La foto supera el límite de 15 MB');
+      }
+
+      setState(() {
+        _isSending = true;
+      });
+      final extension = _photoExtension(photo);
+      final imageUrl = await _api.uploadImage(
+        bytes: await photo.readAsBytes(),
+        filename: 'chat_${DateTime.now().millisecondsSinceEpoch}.$extension',
+      );
+      await _socketService.sendMessage(
+        conversationId: widget.conversationId,
+        text: imageUrl,
+        type: 'image',
+      );
+    } on Exception catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: LocalizedText(
+              'Error al enviar foto: ${error.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  String _photoExtension(XFile photo) {
+    final extension = photo.name.split('.').last.toLowerCase();
+    const supportedExtensions = {'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'};
+    if (supportedExtensions.contains(extension)) return extension;
+    return switch (photo.mimeType) {
+      'image/png' => 'png',
+      'image/webp' => 'webp',
+      'image/gif' => 'gif',
+      'image/bmp' => 'bmp',
+      _ => 'jpg',
+    };
+  }
+
   void _showLocationPicker() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Enviar ubicación'),
-        content: const Text('Comparte tu ubicación actual con este contacto.'),
+        title: const LocalizedText('Enviar ubicación'),
+        content: const LocalizedText(
+          'Comparte tu ubicación actual con este contacto.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const LocalizedText('Cancelar'),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _sendCurrentLocation();
             },
-            child: const Text('Compartir ubicación'),
+            child: const LocalizedText('Compartir ubicación'),
           ),
         ],
       ),
@@ -270,19 +402,36 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   Future<void> _sendCurrentLocation() async {
     final enabled = await Geolocator.isLocationServiceEnabled();
     if (!enabled) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Activa la ubicación del dispositivo')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: LocalizedText('Activa la ubicación del dispositivo'),
+          ),
+        );
+      }
       return;
     }
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
-    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Permiso de ubicación denegado')));
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: LocalizedText('Permiso de ubicación denegado'),
+          ),
+        );
+      }
       return;
     }
     final position = await Geolocator.getCurrentPosition();
-    await _sendLocation(position.latitude, position.longitude, 'Ubicación actual');
+    await _sendLocation(
+      position.latitude,
+      position.longitude,
+      'Ubicación actual',
+    );
   }
 
   String _formatTime(DateTime time) {
@@ -320,7 +469,9 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     if (index >= _messages.length - 1) return true;
     final next = _messages[index + 1];
     final current = _messages[index];
-    return current.isMe != next.isMe || !_isSameDay(current.time, next.time) || current.time.difference(next.time).inMinutes > 5;
+    return current.isMe != next.isMe ||
+        !_isSameDay(current.time, next.time) ||
+        current.time.difference(next.time).inMinutes > 5;
   }
 
   Widget _buildDateSeparator(DateTime date) {
@@ -328,12 +479,27 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
-          Expanded(child: Divider(color: AppColors.outlineVariant.withValues(alpha: 0.5), thickness: 1)),
+          Expanded(
+            child: Divider(
+              color: AppColors.outlineVariant.withValues(alpha: 0.5),
+              thickness: 1,
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(_formatDateSeparator(date), style: AppTextStyles.labelSm.copyWith(color: AppColors.onSurfaceVariant)),
+            child: LocalizedText(
+              _formatDateSeparator(date),
+              style: AppTextStyles.labelSm.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
           ),
-          Expanded(child: Divider(color: AppColors.outlineVariant.withValues(alpha: 0.5), thickness: 1)),
+          Expanded(
+            child: Divider(
+              color: AppColors.outlineVariant.withValues(alpha: 0.5),
+              thickness: 1,
+            ),
+          ),
         ],
       ),
     );
@@ -370,14 +536,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
         final latitude = message.latitude;
         final longitude = message.longitude;
         if (latitude == null || longitude == null) return;
-        launchUrl(Uri.parse('https://www.google.com/maps/search/?api=1&query=$latitude,$longitude'), mode: LaunchMode.externalApplication);
+        launchUrl(
+          Uri.parse(
+            'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+          ),
+          mode: LaunchMode.externalApplication,
+        );
       },
       child: Container(
         width: 220,
         decoration: BoxDecoration(
           color: AppColors.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: AppColors.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,10 +558,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
             Container(
               height: 120,
               decoration: BoxDecoration(
-                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.primaryContainer, AppColors.primaryFixedDim]),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primaryContainer,
+                    AppColors.primaryFixedDim,
+                  ],
+                ),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
               ),
-              child: Icon(Icons.map_rounded, color: AppColors.onPrimary, size: 48),
+              child: Icon(
+                Icons.map_rounded,
+                color: AppColors.onPrimary,
+                size: 48,
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(12),
@@ -397,12 +583,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.location_on_rounded, size: 16, color: AppColors.secondary),
+                      Icon(
+                        Icons.location_on_rounded,
+                        size: 16,
+                        color: AppColors.secondary,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: Text(
+                        child: LocalizedText(
                           message.address ?? 'Ubicación compartida',
-                          style: AppTextStyles.labelMd.copyWith(color: AppColors.onSurface),
+                          style: AppTextStyles.labelMd.copyWith(
+                            color: AppColors.onSurface,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -410,9 +602,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  LocalizedText(
                     '${message.latitude?.toStringAsFixed(4) ?? '0.0000'}, ${message.longitude?.toStringAsFixed(4) ?? '0.0000'}',
-                    style: AppTextStyles.labelSm.copyWith(color: AppColors.onSurfaceVariant),
+                    style: AppTextStyles.labelSm.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -423,14 +617,25 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     );
   }
 
-  Widget _buildAudioContent(ChatMessage message) {
+  Widget _buildAudioContent(ChatMessage message, {required bool isMe}) {
     final duration = message.audioDurationSeconds ?? 0;
+    final foregroundColor = isMe ? AppColors.onPrimary : AppColors.onSurface;
     final bars = <Widget>[];
     final random = Random(message.id.hashCode);
     for (var i = 0; i < 18; i++) {
       final height = random.nextDouble() * 14 + 6;
-      bars.add(Container(width: 3, height: height, decoration: BoxDecoration(color: AppColors.onPrimary.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(2))));
+      bars.add(
+        Container(
+          width: 3,
+          height: height,
+          decoration: BoxDecoration(
+            color: foregroundColor.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      );
     }
+
     return InkWell(
       onTap: () => _toggleAudio(message),
       child: Container(
@@ -440,13 +645,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
             Container(
               width: 32,
               height: 32,
-              decoration: BoxDecoration(color: AppColors.onPrimary.withValues(alpha: 0.2), shape: BoxShape.circle),
-              child: Icon(_playingAudioId == message.id && _isAudioPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: AppColors.onPrimary, size: 18),
+              decoration: BoxDecoration(
+                color: foregroundColor.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _playingAudioId == message.id && _isAudioPlaying
+                    ? Icons.pause_rounded
+                    : Icons.play_arrow_rounded,
+                color: foregroundColor,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 12),
-            Expanded(child: Row(mainAxisSize: MainAxisSize.min, children: bars)),
+            Expanded(
+              child: Row(mainAxisSize: MainAxisSize.min, children: bars),
+            ),
             const SizedBox(width: 12),
-            Text(_formatDuration(duration), style: AppTextStyles.labelSm.copyWith(color: AppColors.onPrimary.withValues(alpha: 0.85))),
+            LocalizedText(
+              _formatDuration(duration),
+              style: AppTextStyles.labelSm.copyWith(
+                color: foregroundColor.withValues(alpha: 0.85),
+              ),
+            ),
           ],
         ),
       ),
@@ -459,7 +680,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
   Future<void> _toggleAudio(ChatMessage message) async {
     final url = message.audioUrl;
     if (url == null || url.isEmpty) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Esta nota de voz no tiene archivo')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: LocalizedText('Esta nota de voz no tiene archivo'),
+          ),
+        );
+      }
       return;
     }
     if (_playingAudioId == message.id && _isAudioPlaying) {
@@ -482,9 +709,65 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       });
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No se pudo reproducir la nota de voz: $error')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: LocalizedText(
+              'No se pudo reproducir la nota de voz: $error',
+            ),
+          ),
+        );
       }
     }
+  }
+
+  Widget _buildImageContent(ChatMessage message) {
+    return GestureDetector(
+      onTap: () => showDialog<void>(
+        context: context,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.all(12),
+          child: InteractiveViewer(
+            child: Image.network(
+              message.text,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const Center(
+                child: LocalizedText('La foto no se pudo cargar'),
+              ),
+            ),
+          ),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Image.network(
+          message.text,
+          width: 240,
+          height: 220,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return SizedBox(
+              width: 240,
+              height: 180,
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: progress.expectedTotalBytes == null
+                      ? null
+                      : progress.cumulativeBytesLoaded /
+                            progress.expectedTotalBytes!,
+                ),
+              ),
+            );
+          },
+          errorBuilder: (_, _, _) => const SizedBox(
+            width: 240,
+            height: 160,
+            child: Center(child: LocalizedText('La foto no se pudo cargar')),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildMessageBubble(ChatMessage message, int index) {
@@ -497,14 +780,26 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     final avatarMargin = isConsecutive ? 0.0 : 0.0;
 
     Widget content = Container(
-      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.75,
+      ),
       decoration: BoxDecoration(
         gradient: isMe
-            ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.primary, AppColors.primaryContainer])
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.primary, AppColors.primaryContainer],
+              )
             : null,
         color: isMe ? null : AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -513,20 +808,54 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
           if (message.type == MessageType.text)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text(message.text, style: TextStyle(color: isMe ? AppColors.onPrimary : AppColors.onSurface)),
+              child: LocalizedText(
+                message.text,
+                style: TextStyle(
+                  color: isMe ? AppColors.onPrimary : AppColors.onSurface,
+                ),
+              ),
             ),
-          if (message.type == MessageType.location) Padding(padding: const EdgeInsets.fromLTRB(8, 8, 8, 4), child: _buildLocationContent(message)),
-          if (message.type == MessageType.audio) Padding(padding: const EdgeInsets.fromLTRB(8, 8, 8, 4), child: _buildAudioContent(message)),
+          if (message.type == MessageType.location)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+              child: _buildLocationContent(message),
+            ),
+          if (message.type == MessageType.audio)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+              child: _buildAudioContent(message, isMe: isMe),
+            ),
+          if (message.type == MessageType.image)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+              child: _buildImageContent(message),
+            ),
           Padding(
-            padding: EdgeInsets.fromLTRB(message.type == MessageType.text ? 16 : 8, message.type == MessageType.text ? 4 : 8, 16, 12),
+            padding: EdgeInsets.fromLTRB(
+              message.type == MessageType.text ? 16 : 8,
+              message.type == MessageType.text ? 4 : 8,
+              16,
+              12,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(_formatTime(message.time), style: AppTextStyles.labelSm.copyWith(color: isMe ? AppColors.onPrimary.withValues(alpha: 0.75) : AppColors.onSurfaceVariant)),
+                LocalizedText(
+                  _formatTime(message.time),
+                  style: AppTextStyles.labelSm.copyWith(
+                    color: isMe
+                        ? AppColors.onPrimary.withValues(alpha: 0.75)
+                        : AppColors.onSurfaceVariant,
+                  ),
+                ),
                 if (isMe && isLast) ...[
                   const SizedBox(width: 4),
                   Icon(
-                    message.time.isAfter(DateTime.now().subtract(const Duration(minutes: 1))) ? Icons.done_all_rounded : Icons.check_rounded,
+                    message.time.isAfter(
+                          DateTime.now().subtract(const Duration(minutes: 1)),
+                        )
+                        ? Icons.done_all_rounded
+                        : Icons.check_rounded,
                     size: 14,
                     color: AppColors.onPrimary.withValues(alpha: 0.75),
                   ),
@@ -543,7 +872,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
         alignment: Alignment.centerRight,
         child: Container(
           margin: EdgeInsets.only(right: 16, bottom: marginBottom),
-          child: content,
+          child: GestureDetector(
+            onLongPress: () => _confirmDeleteMessage(message),
+            child: content,
+          ),
         ),
       );
     }
@@ -570,6 +902,49 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     );
   }
 
+  Future<void> _confirmDeleteMessage(ChatMessage message) async {
+    if (!message.isMe) return;
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const LocalizedText('¿Eliminar mensaje para todos?'),
+        content: const LocalizedText(
+          'El mensaje desaparecerá para ti y para la otra persona.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const LocalizedText('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const LocalizedText('Eliminar para todos'),
+          ),
+        ],
+      ),
+    );
+    if (shouldDelete != true || !mounted) return;
+
+    try {
+      await _chatRepository.deleteMessage(widget.conversationId, message.id);
+      if (!mounted) return;
+      setState(() {
+        _messages.removeWhere((item) => item.id == message.id);
+        _hasMessages = _messages.isNotEmpty;
+      });
+    } on Exception catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: LocalizedText(
+              'Error al eliminar mensaje: ${error.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
@@ -581,18 +956,36 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.primary.withValues(alpha: 0.1), AppColors.primaryContainer.withValues(alpha: 0.05)]),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.1),
+                    AppColors.primaryContainer.withValues(alpha: 0.05),
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(28),
               ),
-              child: Icon(Icons.chat_bubble_outline_rounded, size: 48, color: AppColors.primary),
+              child: Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 48,
+                color: AppColors.primary,
+              ),
             ),
             const SizedBox(height: 24),
-            Text('Inicia la conversación', style: AppTextStyles.titleLg.copyWith(color: AppColors.onBackground)),
+            LocalizedText(
+              'Inicia la conversación',
+              style: AppTextStyles.titleLg.copyWith(
+                color: AppColors.onBackground,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text(
+            LocalizedText(
               'Envía el primer mensaje a ${_conversation?.name ?? 'este contacto'}',
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -607,14 +1000,24 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border(top: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5))),
+        border: Border(
+          top: BorderSide(
+            color: AppColors.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
       ),
       child: Row(
         children: [
           IconButton(
             onPressed: _openAttachmentMenu,
-            icon: Icon(Icons.attach_file_rounded, color: AppColors.onSurfaceVariant),
-            style: IconButton.styleFrom(backgroundColor: AppColors.surface, foregroundColor: AppColors.onSurfaceVariant),
+            icon: Icon(
+              Icons.attach_file_rounded,
+              color: AppColors.onSurfaceVariant,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.surface,
+              foregroundColor: AppColors.onSurfaceVariant,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -622,15 +1025,25 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: AppColors.outlineVariant.withValues(alpha: 0.5),
+                ),
               ),
               child: TextField(
                 controller: _messageController,
                 decoration: InputDecoration(
-                  hintText: 'Escribe un mensaje...',
-                  hintStyle: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  hintText: 'Escribe un mensaje...'.tr,
+                  hintStyle: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
                 ),
                 onSubmitted: (_) => _sendMessage(),
                 onChanged: (_) => setState(() {}),
@@ -644,18 +1057,44 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
               duration: const Duration(milliseconds: 200),
               child: Container(
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.primary, AppColors.primaryContainer]),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primary, AppColors.primaryContainer],
+                  ),
                   borderRadius: BorderRadius.circular(14),
-                  boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 12, offset: const Offset(0, 4))],
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: IconButton(
                   onPressed: _isSending ? null : _sendMessage,
-                  icon: _isSending ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary)) : const Icon(Icons.send_rounded, color: AppColors.onPrimary),
+                  icon: _isSending
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.onPrimary,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.send_rounded,
+                          color: AppColors.onPrimary,
+                        ),
                 ),
               ),
             )
           else
-            _AudioRecordButton(onStart: _startAudioRecording, onRecorded: _sendRecordedAudio, onCancel: _cancelAudioRecording),
+            _AudioRecordButton(
+              onStart: _startAudioRecording,
+              onRecorded: _sendRecordedAudio,
+              onCancel: _cancelAudioRecording,
+            ),
         ],
       ),
     );
@@ -663,7 +1102,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
 
   Future<void> _sendRecordedAudio() async {
     if (!await _audioRecorder.hasPermission()) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Se requiere permiso para grabar audio')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: LocalizedText('Se requiere permiso para grabar audio'),
+          ),
+        );
+      }
       return;
     }
     final path = await _audioRecorder.stop();
@@ -672,28 +1117,43 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
     try {
       final bytes = await XFile(path).readAsBytes();
       final audioExtension = kIsWeb ? 'webm' : 'm4a';
-      final audioUrl = await _api.uploadImage(bytes: bytes, filename: 'audio_${DateTime.now().millisecondsSinceEpoch}.$audioExtension');
-      final durationSeconds = _recordingStartedAt == null ? 0 : DateTime.now().difference(_recordingStartedAt!).inSeconds;
+      final audioUrl = await _api.uploadImage(
+        bytes: bytes,
+        filename:
+            'audio_${DateTime.now().millisecondsSinceEpoch}.$audioExtension',
+      );
+      final durationSeconds = _recordingStartedAt == null
+          ? 0
+          : DateTime.now().difference(_recordingStartedAt!).inSeconds;
       _recordingStartedAt = null;
       await _socketService.sendMessage(
         conversationId: widget.conversationId,
-        text: 'Nota de voz',
+        text: 'Nota de voz'.tr,
         type: 'audio',
-        extra: {
-          'audioDurationSeconds': durationSeconds,
-          'audioUrl': audioUrl,
-        },
+        extra: {'audioDurationSeconds': durationSeconds, 'audioUrl': audioUrl},
       );
     } on Exception catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al enviar audio: ${e.toString().replaceFirst('Exception: ', '')}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: LocalizedText(
+              'Error al enviar audio: ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
       }
     }
   }
 
   Future<bool> _startAudioRecording() async {
     if (!await _audioRecorder.hasPermission()) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Se requiere permiso para grabar audio')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: LocalizedText('Se requiere permiso para grabar audio'),
+          ),
+        );
+      }
       return false;
     }
     try {
@@ -703,11 +1163,21 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       );
       final started = await _audioRecorder.isRecording();
       if (!started && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El navegador no pudo iniciar el micrófono')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: LocalizedText('El navegador no pudo iniciar el micrófono'),
+          ),
+        );
       }
       if (!started) return false;
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No se pudo iniciar el micrófono: $error')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: LocalizedText('No se pudo iniciar el micrófono: $error'),
+          ),
+        );
+      }
       return false;
     }
     _recordingStartedAt = DateTime.now();
@@ -728,7 +1198,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Row(
           children: [
             RTAvatar(
@@ -738,7 +1211,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
             ),
             const SizedBox(width: 12),
             Flexible(
-              child: Text(conversation?.name ?? 'Chat', style: AppTextStyles.titleLg, maxLines: 1, overflow: TextOverflow.ellipsis),
+              child: LocalizedText(
+                conversation?.name ?? 'Chat',
+                style: AppTextStyles.titleLg,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -750,19 +1228,29 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> with TickerProvider
                 ? ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     itemCount: _messages.length + (_isTyping ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (_isTyping && index == _messages.length) {
                         return _buildTypingIndicator();
                       }
                       final message = _messages[index];
-                      final showDateSeparator = index == 0 || !_isSameDay(_messages[index].time, _messages[index - 1].time);
+                      final showDateSeparator =
+                          index == 0 ||
+                          !_isSameDay(
+                            _messages[index].time,
+                            _messages[index - 1].time,
+                          );
                       final items = <Widget>[
-                        if (showDateSeparator) _buildDateSeparator(message.time),
+                        if (showDateSeparator)
+                          _buildDateSeparator(message.time),
                         _buildMessageBubble(message, index),
                       ];
-                      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: items);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: items,
+                      );
                     },
                   )
                 : _buildEmptyState(),
@@ -780,13 +1268,18 @@ class _AudioRecordButton extends StatefulWidget {
   final Future<void> Function() onRecorded;
   final Future<void> Function() onCancel;
 
-  const _AudioRecordButton({required this.onStart, required this.onRecorded, required this.onCancel});
+  const _AudioRecordButton({
+    required this.onStart,
+    required this.onRecorded,
+    required this.onCancel,
+  });
 
   @override
   State<_AudioRecordButton> createState() => _AudioRecordButtonState();
 }
 
-class _AudioRecordButtonState extends State<_AudioRecordButton> with SingleTickerProviderStateMixin {
+class _AudioRecordButtonState extends State<_AudioRecordButton>
+    with SingleTickerProviderStateMixin {
   bool _isRecording = false;
   int _seconds = 0;
   Timer? _timer;
@@ -796,8 +1289,13 @@ class _AudioRecordButtonState extends State<_AudioRecordButton> with SingleTicke
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(duration: const Duration(milliseconds: 1000), vsync: this)..repeat();
-    _pulseAnimation = Tween(begin: 0.85, end: 1.0).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    )..repeat();
+    _pulseAnimation = Tween(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -841,7 +1339,9 @@ class _AudioRecordButtonState extends State<_AudioRecordButton> with SingleTicke
 
   @override
   Widget build(BuildContext context) {
-    final text = _isRecording ? '${(_seconds ~/ 60).toString().padLeft(2, '0')}:${(_seconds % 60).toString().padLeft(2, '0')}' : null;
+    final text = _isRecording
+        ? '${(_seconds ~/ 60).toString().padLeft(2, '0')}:${(_seconds % 60).toString().padLeft(2, '0')}'
+        : null;
     return GestureDetector(
       onLongPressStart: (_) => _startRecording(),
       onLongPressEnd: (_) => _stopRecording(),
@@ -852,22 +1352,37 @@ class _AudioRecordButtonState extends State<_AudioRecordButton> with SingleTicke
         }
       },
       child: ScaleTransition(
-        scale: _isRecording ? _pulseAnimation : const AlwaysStoppedAnimation(1.0),
+        scale: _isRecording
+            ? _pulseAnimation
+            : const AlwaysStoppedAnimation(1.0),
         child: Container(
-          width: 52,
-          height: 52,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
-            color: _isRecording ? AppColors.error : AppColors.surfaceContainerHighest,
+            color: _isRecording
+                ? AppColors.error
+                : AppColors.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Center(
             child: _isRecording
                 ? Row(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.mic_rounded, color: AppColors.onPrimary, size: 22),
-                      const SizedBox(width: 4),
-                      Text(text ?? '', style: AppTextStyles.labelSm.copyWith(color: AppColors.onPrimary)),
+                      Icon(
+                        Icons.mic_rounded,
+                        color: AppColors.onPrimary,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 2),
+                      LocalizedText(
+                        text ?? '',
+                        style: AppTextStyles.labelSm.copyWith(
+                          color: AppColors.onPrimary,
+                          fontSize: 9,
+                        ),
+                      ),
                     ],
                   )
                 : Icon(Icons.mic_rounded, color: AppColors.onSurfaceVariant),
@@ -885,18 +1400,27 @@ class _TypingDots extends StatefulWidget {
   State<_TypingDots> createState() => _TypingDotsState();
 }
 
-class _TypingDotsState extends State<_TypingDots> with SingleTickerProviderStateMixin {
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late List<Animation<double>> _animations;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(duration: const Duration(milliseconds: 1200), vsync: this)..repeat();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat();
     _animations = List.generate(3, (i) {
       final start = i * 0.15;
       final end = start + 0.4;
-      return Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Interval(start, end, curve: Curves.easeInOut)));
+      return Tween(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: Interval(start, end, curve: Curves.easeInOut),
+        ),
+      );
     });
   }
 
@@ -923,7 +1447,10 @@ class _TypingDotsState extends State<_TypingDots> with SingleTickerProviderState
                 child: Container(
                   width: 6,
                   height: 6,
-                  decoration: BoxDecoration(color: AppColors.onSurfaceVariant, borderRadius: BorderRadius.circular(3)),
+                  decoration: BoxDecoration(
+                    color: AppColors.onSurfaceVariant,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
               ),
             );

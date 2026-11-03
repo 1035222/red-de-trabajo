@@ -93,7 +93,7 @@ CREATE TABLE chat_messages (
     id VARCHAR(36) PRIMARY KEY,
     conversation_id VARCHAR(36) NOT NULL,
     sender_id VARCHAR(36) NOT NULL,
-    type ENUM('text', 'location', 'audio') DEFAULT 'text' NOT NULL,
+    type ENUM('text', 'location', 'audio', 'image') DEFAULT 'text' NOT NULL,
     text TEXT NOT NULL,
     latitude DOUBLE DEFAULT NULL,
     longitude DOUBLE DEFAULT NULL,
@@ -120,6 +120,7 @@ CREATE TABLE notifications (
     user_id VARCHAR(36) NOT NULL,
     title VARCHAR(200) NOT NULL,
     body TEXT NOT NULL,
+    metadata JSON NULL,
     time DATETIME DEFAULT CURRENT_TIMESTAMP,
     read BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -127,6 +128,17 @@ CREATE TABLE notifications (
     INDEX idx_user (user_id),
     INDEX idx_read (read),
     INDEX idx_time (time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE fcm_tokens (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    token VARCHAR(512) NOT NULL UNIQUE,
+    platform VARCHAR(20) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_fcm_token_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_fcm_token_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO categories (name, icon, color) VALUES

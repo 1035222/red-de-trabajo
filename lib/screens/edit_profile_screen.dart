@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme/app_colors.dart';
@@ -59,7 +60,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } on Exception catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al subir imagen: ${e.toString().replaceFirst('Exception: ', '')}')),
+          SnackBar(content: LocalizedText('Error al subir imagen: ${e.toString().replaceFirst('Exception: ', '')}')),
         );
       }
     } finally {
@@ -81,10 +82,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await _profileRepository.updateUserProfile(updated);
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Perfil actualizado')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LocalizedText('Perfil actualizado')));
     } on Exception catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al actualizar perfil: ${e.toString().replaceFirst('Exception: ', '')}')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LocalizedText('Error al actualizar perfil: ${e.toString().replaceFirst('Exception: ', '')}')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -101,7 +102,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
-        title: Text('Editar perfil', style: AppTextStyles.titleLg),
+        title: LocalizedText('Editar perfil', style: AppTextStyles.titleLg),
       ),
       body: SafeArea(
         child: Center(
@@ -133,12 +134,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             padding: const EdgeInsets.all(16),
                             child: TextFormField(
                               controller: _nameController,
-                              decoration: const InputDecoration(
-                                labelText: 'Nombre completo',
+                              decoration: InputDecoration(
+                                labelText: 'Nombre completo'.tr,
                                 border: InputBorder.none,
                                 labelStyle: TextStyle(color: AppColors.onSurfaceVariant),
                               ),
-                              validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido' : null,
+                              validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido'.tr : null,
                             ),
                           ),
                           Divider(height: 1, color: AppColors.outlineVariant.withValues(alpha: 0.5)),
@@ -148,8 +149,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               readOnly: true,
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              decoration: const InputDecoration(
-                                labelText: 'Correo electrónico',
+                              decoration: InputDecoration(
+                                labelText: 'Correo electrónico'.tr,
                                 border: InputBorder.none,
                                 labelStyle: TextStyle(color: AppColors.onSurfaceVariant),
                               ),
@@ -161,8 +162,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             child: TextFormField(
                               controller: _bioController,
                               maxLines: 3,
-                              decoration: const InputDecoration(
-                                labelText: 'Biografía',
+                              decoration: InputDecoration(
+                                labelText: 'Biografía'.tr,
                                 border: InputBorder.none,
                                 labelStyle: TextStyle(color: AppColors.onSurfaceVariant),
                               ),
@@ -173,8 +174,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             padding: const EdgeInsets.all(16),
                             child: TextFormField(
                               controller: _locationController,
-                              decoration: const InputDecoration(
-                                labelText: 'Ubicación',
+                              decoration: InputDecoration(
+                                labelText: 'Ubicación'.tr,
                                 border: InputBorder.none,
                                 labelStyle: TextStyle(color: AppColors.onSurfaceVariant),
                               ),
@@ -184,7 +185,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    RTPrimaryButton(text: 'Guardar cambios', onPressed: _handleSave, isLoading: _isLoading),
+                    RTPrimaryButton(text: 'Guardar cambios'.tr, onPressed: _handleSave, isLoading: _isLoading),
                   ],
                 ),
               ),

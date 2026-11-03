@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 enum MessageStatus { sending, sent, delivered, read }
 
-enum MessageType { text, location, audio }
+enum MessageType { text, location, audio, image }
 
 @immutable
 class ChatMessage {

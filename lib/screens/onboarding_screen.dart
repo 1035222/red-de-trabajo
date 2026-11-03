@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
@@ -33,7 +34,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         color: AppColors.primary,
         secondaryColor: AppColors.primaryContainer,
       ),
-      title: 'Encuentra el servicio que necesitas',
+      title: 'Encuentra el servicio que necesitas'.tr,
       description: 'Conecta con los mejores profesionales de tu zona de forma rápida y segura.',
     ),
     OnboardingPageData(
@@ -42,7 +43,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         color: AppColors.secondary,
         secondaryColor: AppColors.secondaryContainer,
       ),
-      title: 'Haz visibles tus habilidades',
+      title: 'Haz visibles tus habilidades'.tr,
       description: 'Crea un perfil profesional, publica tus servicios y conecta con oportunidades reales.',
     ),
     OnboardingPageData(
@@ -51,7 +52,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         color: AppColors.primaryContainer,
         secondaryColor: AppColors.primaryFixedDim,
       ),
-      title: 'Conecta y trabaja',
+      title: 'Conecta y trabaja'.tr,
       description: 'Encuentra profesionales calificados o clientes ideales. Todo en un solo lugar.',
     ),
   ];
@@ -100,7 +101,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: Text('Saltar', style: GoogleFonts.inter(fontSize: isSmallScreen ? 13 : 14, fontWeight: FontWeight.w600)),
+                  child: LocalizedText('Saltar', style: GoogleFonts.inter(fontSize: isSmallScreen ? 13 : 14, fontWeight: FontWeight.w600)),
                 ),
               ),
             ),
@@ -161,7 +162,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                                     Flexible(
                                       child: FittedBox(
                                         fit: BoxFit.scaleDown,
-                                        child: Text('Anterior', style: GoogleFonts.inter(fontSize: isSmallScreen ? 11 : 12, fontWeight: FontWeight.w600)),
+                                        child: LocalizedText('Anterior', style: GoogleFonts.inter(fontSize: isSmallScreen ? 11 : 12, fontWeight: FontWeight.w600)),
                                       ),
                                     ),
                                   ],
@@ -186,7 +187,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                               Flexible(
                                 child: FittedBox(
                                   fit: BoxFit.scaleDown,
-                                  child: Text(isLastPage ? 'Comenzar' : 'Continuar', style: GoogleFonts.inter(fontSize: isSmallScreen ? 12 : 13, fontWeight: FontWeight.w600)),
+                                  child: LocalizedText(isLastPage ? 'Comenzar' : 'Continuar', style: GoogleFonts.inter(fontSize: isSmallScreen ? 12 : 13, fontWeight: FontWeight.w600)),
                                 ),
                               ),
                               SizedBox(width: isSmallScreen ? 4 : 6),
@@ -241,7 +242,7 @@ class _OnboardingPage extends StatelessWidget {
                 child: Center(child: data.illustration),
               ),
               SizedBox(height: isSmallScreen ? 24 : 40),
-              Text(
+              LocalizedText(
                 data.title,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(fontSize: isSmallScreen ? 22 : 28, fontWeight: FontWeight.w700, letterSpacing: -0.5, color: AppColors.onBackground, height: 1.2),
@@ -249,7 +250,7 @@ class _OnboardingPage extends StatelessWidget {
               SizedBox(height: isSmallScreen ? 8 : 16),
               ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: isSmallScreen ? 280 : 320),
-                child: Text(
+                child: LocalizedText(
                   data.description,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(fontSize: isSmallScreen ? 14 : 16, fontWeight: FontWeight.w400, color: AppColors.onSurfaceVariant, height: 1.5),

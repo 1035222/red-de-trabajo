@@ -13,16 +13,17 @@ Trabajadores de oficios (plomeros, electricistas, carpinteros, pintores, panader
 Personas/empresas que buscan contratar esos servicios.
 Un mismo usuario puede ofrecer y contratar simultáneamente.
 Flujos clave (ya implementados)
-Registro/login: Google Sign-In obligatorio en el primer acceso; login posterior con email/contraseña vía linkWithCredential. (Difiere del doc: no es JWT/bcrypt propio.)
+Registro/login: Google Sign-In y registro/inicio de sesión con correo y contraseña mediante Firebase Auth. Las cuentas creadas con Google pueden asociar una contraseña con linkWithCredential. El perfil se sincroniza con el backend usando el UID de Firebase.
+Inicio: mostrar un saludo personalizado con el nombre del usuario autenticado.
 Gestión de perfil: crear/editar perfil, foto, biografía, ubicación — conectado a backend real.
 Publicar/editar/eliminar servicio: título, descripción, categoría, precio, imágenes (la imagen se sube desde el frontend; el backend solo persiste la URL).
 Portafolio: galería de trabajos anteriores — conectado a backend real.
 Búsqueda y filtrado: por texto, categoría (ubicación y precio: confirmar si ya están implementados o siguen en el documento como aspiracionales — [NEEDS CLARIFICATION]).
 Calificaciones y reseñas: sistema de estrellas + comentario — conectado a backend real.
 Flujos clave (pendientes)
-Chat en tiempo real: integrado con Socket.io; se amplía con texto, audio y ubicación.
+Chat en tiempo real: integrado con Socket.io para texto, fotos, audio y ubicación; todos los tipos deben poder enviarse y visualizarse por emisor y receptor. Las fotos se cargan al backend y se muestran en el historial y en tiempo real.
 Interacción de servicios: reseñas, solicitudes, favoritos y compartir desde el detalle.
-Notificaciones: push (Firebase Cloud Messaging) — no confirmado si está implementado; [NEEDS CLARIFICATION].
+Notificaciones: bandeja backend con estado leído/no leído, contador total de pendientes en la campana y push mediante Firebase Cloud Messaging. El contador se actualiza al recibir avisos y al volver a la app. Al abrir una notificación, la app navega al chat, solicitudes o reseña/servicio correspondiente, tanto desde la bandeja como desde el aviso push. Las notificaciones nuevas persisten metadatos de destino; las anteriores sin destino siguen siendo legibles.
 Criterios de éxito
 Un usuario puede publicar un servicio con foto y descripción, y verlo persistido y consultable por otros usuarios.
 Un usuario puede encontrar un trabajador por búsqueda/filtro y ver su perfil, portafolio y calificaciones reales.

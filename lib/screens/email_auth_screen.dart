@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
@@ -35,19 +36,19 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> with TickerProviderSt
       if (response.statusCode == 200) {
         HapticFeedback.lightImpact();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo enviar el correo de autorización')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LocalizedText('No se pudo enviar el correo de autorización')));
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSending = false);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error de conexión al enviar autorización')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LocalizedText('Error de conexión al enviar autorización')));
     }
   }
 
   Future<void> _verifyCode() async {
     final code = _codeController.text.trim();
     if (code.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingresá el código de autorización')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LocalizedText('Ingresá el código de autorización')));
       return;
     }
     try {
@@ -57,11 +58,11 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> with TickerProviderSt
         setState(() => _isVerified = true);
         widget.onAuthorized();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Código inválido')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LocalizedText('Código inválido')));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error de conexión')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LocalizedText('Error de conexión')));
     }
   }
 
@@ -93,15 +94,15 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> with TickerProviderSt
                     child: Icon(Icons.mark_email_read_rounded, size: 48, color: AppColors.primary),
                   ),
                   const SizedBox(height: 24),
-                  Text('Verifica tu acceso', textAlign: TextAlign.center, style: AppTextStyles.headlineMd),
+                  LocalizedText('Verifica tu acceso', textAlign: TextAlign.center, style: AppTextStyles.headlineMd),
                   const SizedBox(height: 8),
-                  Text(
+                  LocalizedText(
                     'Enviamos un correo a ${widget.email}',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
                   ),
                   const SizedBox(height: 16),
-                  Text(
+                  LocalizedText(
                     'Ingresá el código de autorización que recibiste para continuar.',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant, height: 1.5),
@@ -116,8 +117,8 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> with TickerProviderSt
                           controller: _codeController,
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
-                            labelText: 'Código de autorización',
-                            hintText: 'Ej: 123456',
+                            labelText: 'Código de autorización'.tr,
+                            hintText: 'Ej: 123456'.tr,
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           ),
@@ -127,7 +128,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> with TickerProviderSt
                         ElevatedButton(
                           onPressed: _isVerified ? null : _verifyCode,
                           style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.onPrimary),
-                          child: Text(_isVerified ? 'Verificado' : 'Verificar código', style: AppTextStyles.labelLg),
+                          child: LocalizedText(_isVerified ? 'Verificado' : 'Verificar código', style: AppTextStyles.labelLg),
                         ),
                       ],
                     ),
@@ -138,7 +139,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> with TickerProviderSt
                         : () async {
                             await _sendAuthorizationEmail();
                           },
-                    child: Text('Reenviar correo', style: AppTextStyles.labelMd.copyWith(color: AppColors.primary)),
+                    child: LocalizedText('Reenviar correo', style: AppTextStyles.labelMd.copyWith(color: AppColors.primary)),
                   ),
                 ],
               ),

@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -13,7 +14,7 @@ class AboutScreen extends StatelessWidget {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
-        title: Text('Acerca de', style: AppTextStyles.titleLg),
+        title: LocalizedText('Acerca de', style: AppTextStyles.titleLg),
       ),
       body: SafeArea(
         child: Center(
@@ -33,11 +34,11 @@ class AboutScreen extends StatelessWidget {
                        child: const Icon(Icons.handshake_rounded, size: 48, color: AppColors.primary),
                   ),
                   const SizedBox(height: 24),
-                  Text('Red de Trabajo', style: AppTextStyles.headlineLg),
+                  LocalizedText('Red de Trabajo', style: AppTextStyles.headlineLg),
                   const SizedBox(height: 8),
-                  Text('Versión 1.0.0', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                  LocalizedText('Versión 1.0.0', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
                   const SizedBox(height: 24),
-                  Text(
+                  LocalizedText(
                     'Conectando personas que ofrecen servicios con quienes necesitan contratarlos. '
                     'Nuestra misión es facilitar el encuentro entre profesionales, trabajadores independientes '
                     'y usuarios que buscan servicios de calidad.',
@@ -51,7 +52,7 @@ class AboutScreen extends StatelessWidget {
                         child: ElevatedButton.icon(
                           onPressed: () {},
                           icon: const Icon(Icons.share_rounded),
-                          label: const Text('Compartir'),
+                          label: const LocalizedText('Compartir'),
                           style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.onPrimary),
                         ),
                       ),

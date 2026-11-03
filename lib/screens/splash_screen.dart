@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 import '../services/firebase_auth_service.dart';
@@ -101,7 +102,7 @@ class AppTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
+    return LocalizedText(
       'Red de Trabajo',
       style: AppTextStyles.headlineLg.copyWith(
         color: AppColors.onPrimary,
@@ -116,7 +117,7 @@ class AppSubtitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
+    return LocalizedText(
       'Conecta con profesionales',
       style: GoogleFonts.inter(
         fontSize: 16,

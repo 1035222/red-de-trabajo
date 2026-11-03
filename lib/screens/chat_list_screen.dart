@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -30,9 +31,9 @@ class ChatListScreen extends StatelessWidget {
               children: [
                 Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
                 const SizedBox(height: 16),
-                Text('Error al cargar mensajes', style: AppTextStyles.bodyMd),
+                LocalizedText('Error al cargar mensajes', style: AppTextStyles.bodyMd),
                 const SizedBox(height: 8),
-                Text(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
+                LocalizedText(snapshot.error.toString().replaceFirst('Exception: ', ''), style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), textAlign: TextAlign.center),
               ],
             ),
           );
@@ -45,7 +46,7 @@ class ChatListScreen extends StatelessWidget {
               children: [
                 Icon(Icons.chat_bubble_outline_rounded, size: 64, color: AppColors.outline),
                 const SizedBox(height: 16),
-                Text('No tienes conversaciones', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                LocalizedText('No tienes conversaciones', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
               ],
             ),
           );
@@ -70,13 +71,13 @@ class ChatListScreen extends StatelessWidget {
                 size: 56,
                 fallbackInitial: message.name.isNotEmpty ? message.name[0] : '?',
               ),
-                title: Text(message.name, style: AppTextStyles.labelMd.copyWith(fontWeight: FontWeight.w600)),
-                subtitle: Text(message.lastMessage, style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
+                title: LocalizedText(message.name, style: AppTextStyles.labelMd.copyWith(fontWeight: FontWeight.w600)),
+                subtitle: LocalizedText(message.lastMessage, style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis),
                 trailing: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(message.time, style: AppTextStyles.labelSm),
+                    LocalizedText(message.time, style: AppTextStyles.labelSm),
                     if (message.unread) Container(margin: const EdgeInsets.only(top: 6), width: 10, height: 10, decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
                   ],
                 ),
@@ -109,7 +110,7 @@ class ChatListScreen extends StatelessWidget {
             Navigator.maybePop(context);
           }
         }),
-        title: Text('Mensajes', style: AppTextStyles.titleLg),
+        title: LocalizedText('Mensajes', style: AppTextStyles.titleLg),
       ),
       body: body,
     );

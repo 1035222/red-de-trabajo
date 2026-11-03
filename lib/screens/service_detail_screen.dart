@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:share_plus/share_plus.dart';
@@ -68,11 +69,11 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
     final message = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Solicitar servicio'),
-        content: TextField(controller: messageController, maxLines: 3, decoration: const InputDecoration(hintText: 'Escribe un mensaje para el proveedor')),
+        title: const LocalizedText('Solicitar servicio'),
+        content: TextField(controller: messageController, maxLines: 3, decoration: InputDecoration(hintText: 'Escribe un mensaje para el proveedor'.tr)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(context, messageController.text.trim()), child: const Text('Enviar solicitud')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const LocalizedText('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(context, messageController.text.trim()), child: const LocalizedText('Enviar solicitud')),
         ],
       ),
     );
@@ -80,7 +81,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
     if (message == null) return;
     final response = await _api.post('/services/${widget.service.id}/requests', {'message': message});
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.statusCode == 201 || response.statusCode == 200 ? 'Solicitud enviada' : 'No se pudo enviar la solicitud')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LocalizedText(response.statusCode == 201 || response.statusCode == 200 ? 'Solicitud enviada' : 'No se pudo enviar la solicitud')));
   }
 
   Future<void> _openChat() async {
@@ -90,7 +91,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
       final id = (jsonDecode(response.body) as Map<String, dynamic>)['id'] as String;
       Navigator.push(context, MaterialPageRoute(builder: (_) => ChatDetailScreen(conversationId: id)));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo abrir el chat')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LocalizedText('No se pudo abrir el chat')));
     }
   }
 
@@ -100,19 +101,19 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
     final submitted = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(builder: (context, setDialogState) => AlertDialog(
-        title: const Text('Calificar servicio'),
+        title: const LocalizedText('Calificar servicio'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(5, (index) => IconButton(onPressed: () => setDialogState(() => rating = index + 1.0), icon: Icon(index < rating ? Icons.star : Icons.star_border, color: AppColors.secondary)))),
-          TextField(controller: commentController, maxLines: 3, decoration: const InputDecoration(hintText: 'Escribe un comentario')),
+          TextField(controller: commentController, maxLines: 3, decoration: InputDecoration(hintText: 'Escribe un comentario'.tr)),
         ]),
-        actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Publicar'))],
+        actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const LocalizedText('Cancelar')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const LocalizedText('Publicar'))],
       )),
     );
     if (submitted != true || commentController.text.trim().isEmpty) return;
     final response = await _api.post('/reviews', {'serviceId': widget.service.id, 'rating': rating, 'comment': commentController.text.trim()});
     commentController.dispose();
     await _loadReviews();
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.statusCode == 201 ? 'Reseña publicada' : 'No se pudo publicar la reseña')));
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LocalizedText(response.statusCode == 201 ? 'Reseña publicada' : 'No se pudo publicar la reseña')));
   }
 
   Future<void> _shareService() async {
@@ -156,7 +157,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   color: AppColors.surfaceContainerHighest,
-                  child: const Icon(Icons.image_not_supported_outlined, size: 64, color: AppColors.outline),
+                  child: Icon(Icons.image_not_supported_outlined, size: 64, color: AppColors.outline),
                 ),
               ),
             ),
@@ -169,7 +170,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: Text(widget.service.title, style: AppTextStyles.headlineLg)),
+                      Expanded(child: LocalizedText(widget.service.title, style: AppTextStyles.headlineLg)),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
@@ -180,38 +181,38 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                           children: [
                             const Icon(Icons.star_rounded, size: 16, color: AppColors.secondary),
                             const SizedBox(width: 4),
-                            Text(widget.service.rating.toString(), style: AppTextStyles.labelMd.copyWith(fontWeight: FontWeight.w600, color: AppColors.secondary)),
+                            LocalizedText(widget.service.rating.toString(), style: AppTextStyles.labelMd.copyWith(fontWeight: FontWeight.w600, color: AppColors.secondary)),
                           ],
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(widget.service.providerName, style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                  LocalizedText(widget.service.providerName, style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 16, color: AppColors.onSurfaceVariant),
+                      Icon(Icons.location_on_outlined, size: 16, color: AppColors.onSurfaceVariant),
                       const SizedBox(width: 4),
-                      Text('Ciudad de México', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                      LocalizedText('Ciudad de México', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(widget.service.price, style: AppTextStyles.headlineMd.copyWith(color: AppColors.primary)),
+                  LocalizedText(widget.service.price, style: AppTextStyles.headlineMd.copyWith(color: AppColors.primary)),
                   const SizedBox(height: 24),
-                  Text('Descripción', style: AppTextStyles.headlineMd),
+                  LocalizedText('Descripción', style: AppTextStyles.headlineMd),
                   const SizedBox(height: 8),
-                  Text(widget.service.description, style: AppTextStyles.bodyMd),
+                  LocalizedText(widget.service.description, style: AppTextStyles.bodyMd),
                   const SizedBox(height: 24),
-                  Text('Categoría', style: AppTextStyles.headlineMd),
+                  LocalizedText('Categoría', style: AppTextStyles.headlineMd),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-                    child: Text(widget.service.category, style: AppTextStyles.labelMd.copyWith(color: AppColors.primary)),
+                    child: LocalizedText(widget.service.category, style: AppTextStyles.labelMd.copyWith(color: AppColors.primary)),
                   ),
                   const SizedBox(height: 24),
-                  Text('Reseñas', style: AppTextStyles.headlineMd),
+                  LocalizedText('Reseñas', style: AppTextStyles.headlineMd),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -223,20 +224,20 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                         );
                       }),
                       const SizedBox(width: 8),
-                      Text('${widget.service.rating} (${widget.service.reviewsCount} reseñas)', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                      LocalizedText('${widget.service.rating} (${widget.service.reviewsCount} reseñas)', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
                     ],
                   ),
                   const SizedBox(height: 16),
                   if (_reviews.isEmpty)
-                    Text('Aún no hay comentarios.', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant))
+                    LocalizedText('Aún no hay comentarios.', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant))
                   else
                     ..._reviews.take(5).map((review) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
                             contentPadding: EdgeInsets.zero,
-                            leading: CircleAvatar(child: Text(review.userName.isEmpty ? 'U' : review.userName[0].toUpperCase())),
-                            title: Row(children: [Text(review.userName), const SizedBox(width: 8), Text('${review.rating}/5')]),
-                            subtitle: Text(review.comment),
+                            leading: CircleAvatar(child: LocalizedText(review.userName.isEmpty ? 'U' : review.userName[0].toUpperCase())),
+                            title: Row(children: [LocalizedText(review.userName), const SizedBox(width: 8), LocalizedText('${review.rating}/5')]),
+                            subtitle: LocalizedText(review.comment),
                           ),
                         )),
                   const SizedBox(height: 16),
@@ -248,7 +249,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                             _openChat();
                           },
                           icon: const Icon(Icons.message_rounded),
-                          label: const Text('Enviar mensaje'),
+                          label: const LocalizedText('Enviar mensaje'),
                           style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, foregroundColor: AppColors.onSecondary),
                         ),
                       ),
@@ -259,13 +260,13 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                             _requestService();
                           },
                           style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.onPrimary),
-                          child: const Text('Solicitar servicio'),
+                          child: const LocalizedText('Solicitar servicio'),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  OutlinedButton.icon(onPressed: _writeReview, icon: const Icon(Icons.rate_review_outlined), label: const Text('Escribir reseña')),
+                  OutlinedButton.icon(onPressed: _writeReview, icon: const Icon(Icons.rate_review_outlined), label: const LocalizedText('Escribir reseña')),
                   const SizedBox(height: 80),
                 ],
               ),

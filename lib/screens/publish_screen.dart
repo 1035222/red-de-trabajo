@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme/app_colors.dart';
@@ -66,7 +67,7 @@ class _PublishScreenState extends State<PublishScreen> {
       if (mounted) setState(() => _imageUrl = url);
     } on Exception catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al subir imagen: ${e.toString().replaceFirst('Exception: ', '')}')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LocalizedText('Error al subir imagen: ${e.toString().replaceFirst('Exception: ', '')}')));
       }
     } finally {
       if (mounted) setState(() => _isUploadingImage = false);
@@ -96,10 +97,10 @@ class _PublishScreenState extends State<PublishScreen> {
       ));
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Servicio publicado exitosamente')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: LocalizedText('Servicio publicado exitosamente')));
     } on Exception catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al publicar: ${e.toString().replaceFirst('Exception: ', '')}')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LocalizedText('Error al publicar: ${e.toString().replaceFirst('Exception: ', '')}')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -114,7 +115,7 @@ class _PublishScreenState extends State<PublishScreen> {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
-        title: Text('Publicar servicio', style: AppTextStyles.titleLg),
+        title: LocalizedText('Publicar servicio', style: AppTextStyles.titleLg),
       ),
       body: SafeArea(
         child: Center(
@@ -139,12 +140,12 @@ class _PublishScreenState extends State<PublishScreen> {
                             padding: const EdgeInsets.all(16),
                             child: TextFormField(
                               controller: _titleController,
-                              decoration: const InputDecoration(
-                                labelText: 'Título del servicio',
+                              decoration: InputDecoration(
+                                labelText: 'Título del servicio'.tr,
                                 border: InputBorder.none,
                                 labelStyle: TextStyle(color: AppColors.onSurfaceVariant),
                               ),
-                              validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido' : null,
+                              validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido'.tr : null,
                             ),
                           ),
                           Divider(height: 1, color: AppColors.outlineVariant.withValues(alpha: 0.5)),
@@ -152,10 +153,10 @@ class _PublishScreenState extends State<PublishScreen> {
                             padding: const EdgeInsets.all(16),
                             child: DropdownButtonFormField<String>(
                               initialValue: _categoryController.text.isEmpty ? null : _categoryController.text,
-                              decoration: const InputDecoration(labelText: 'Categoría', border: InputBorder.none),
-                              items: _categories.map((category) => DropdownMenuItem(value: category, child: Text(category))).toList(),
+                              decoration: InputDecoration(labelText: 'Categoría'.tr, border: InputBorder.none),
+                              items: _categories.map((category) => DropdownMenuItem(value: category, child: LocalizedText(category))).toList(),
                               onChanged: (value) => _categoryController.text = value ?? '',
-                              validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido' : null,
+                              validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido'.tr : null,
                             ),
                           ),
                           Divider(height: 1, color: AppColors.outlineVariant.withValues(alpha: 0.5)),
@@ -163,12 +164,12 @@ class _PublishScreenState extends State<PublishScreen> {
                             padding: const EdgeInsets.all(16),
                             child: TextFormField(
                               controller: _priceController,
-                              decoration: const InputDecoration(
-                                labelText: 'Precio (ej: \$35/hr)',
+                              decoration: InputDecoration(
+                                labelText: 'Precio (ej: \$35/hr)'.tr,
                                 border: InputBorder.none,
                                 labelStyle: TextStyle(color: AppColors.onSurfaceVariant),
                               ),
-                              validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido' : null,
+                              validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido'.tr : null,
                             ),
                           ),
                           Divider(height: 1, color: AppColors.outlineVariant.withValues(alpha: 0.5)),
@@ -177,12 +178,12 @@ class _PublishScreenState extends State<PublishScreen> {
                             child: TextFormField(
                               controller: _descriptionController,
                               maxLines: 5,
-                              decoration: const InputDecoration(
-                                labelText: 'Descripción',
+                              decoration: InputDecoration(
+                                labelText: 'Descripción'.tr,
                                 border: InputBorder.none,
                                 labelStyle: TextStyle(color: AppColors.onSurfaceVariant),
                               ),
-                              validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido' : null,
+                              validator: (value) => (value == null || value.isEmpty) ? 'Campo requerido'.tr : null,
                             ),
                           ),
                         ],
@@ -192,10 +193,10 @@ class _PublishScreenState extends State<PublishScreen> {
                     OutlinedButton.icon(
                       onPressed: _isUploadingImage ? null : _pickAndUploadImage,
                       icon: _isUploadingImage ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.add_photo_alternate_outlined),
-                      label: Text(_imageUrl == null ? 'Agregar imagen' : 'Imagen cargada'),
+                      label: LocalizedText(_imageUrl == null ? 'Agregar imagen' : 'Imagen cargada'),
                     ),
                     const SizedBox(height: 16),
-                    RTPrimaryButton(text: 'Publicar', onPressed: _handlePublish, isLoading: _isLoading),
+                    RTPrimaryButton(text: 'Publicar'.tr, onPressed: _handlePublish, isLoading: _isLoading),
                   ],
                 ),
               ),

@@ -1,3 +1,4 @@
+import '../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
@@ -51,7 +52,7 @@ class RTAvatar extends StatelessWidget {
     return CircleAvatar(
       radius: size / 2,
       backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-      child: Text(
+      child: LocalizedText(
         fallbackInitial,
         style: TextStyle(
           fontSize: size * 0.4,

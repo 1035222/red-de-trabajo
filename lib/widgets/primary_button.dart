@@ -1,4 +1,7 @@
+import '../l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
@@ -25,10 +28,19 @@ class RTPrimaryButton extends StatelessWidget {
         foregroundColor: WidgetStateProperty.all(AppColors.onPrimary),
         minimumSize: WidgetStateProperty.all(const Size(double.infinity, 48)),
         shape: WidgetStateProperty.all(const StadiumBorder()),
-        overlayColor: WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.12)),
+        overlayColor: WidgetStateProperty.all(
+          AppColors.primary.withValues(alpha: 0.12),
+        ),
       ),
       child: isLoading
-          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.onPrimary))
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.onPrimary,
+              ),
+            )
           : FittedBox(
               fit: BoxFit.scaleDown,
               child: Row(
@@ -39,7 +51,7 @@ class RTPrimaryButton extends StatelessWidget {
                     Icon(icon, size: 18),
                     const SizedBox(width: 8),
                   ],
-                  Text(text, style: AppTextStyles.labelLg),
+                  LocalizedText(text, style: AppTextStyles.labelLg),
                 ],
               ),
             ),
