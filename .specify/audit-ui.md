@@ -2,6 +2,8 @@
 
 Fecha: 2026-09-10
 
+> Este documento conserva un diagnóstico histórico de esa fecha, no el estado actual. Sus hallazgos de filtros, backend y chat fueron superados por correcciones posteriores y no deben usarse como guía de implementación. El estado vigente y el mapa por archivos están en [README.md](../README.md), [spec.md](./spec.md) y [testing.md](./testing.md).
+
 ## Objetivo
 
 Registrar el estado real de los flujos de frontend y backend en la app actual, con evidencia de qué endpoint responde, qué error devuelve y qué parte del flujo queda pendiente.

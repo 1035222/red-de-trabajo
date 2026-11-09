@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Red de Trabajo usa tu ubicación actual cuando eliges compartirla en un chat.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Red de Trabajo usa el micrófono cuando grabas una nota de voz para un chat.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

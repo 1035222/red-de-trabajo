@@ -96,6 +96,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
     _isRefreshingNotificationCount = true;
     try {
+      if (!await PushNotificationService.isEnabled()) {
+        if (mounted) setState(() => _unreadNotificationCount = 0);
+        return;
+      }
       final count = await RepositoryProvider.notificationRepository
           .getUnreadCount();
       if (!mounted) return;
@@ -369,6 +373,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             },
           ),
           ProfileScreen(
+            isActive: _currentIndex == 3,
             onBack: () {
               setState(() => _currentIndex = 0);
             },
@@ -611,9 +616,9 @@ class _HomeTab extends StatelessWidget {
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.75,
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 220,
+                    childAspectRatio: 0.72,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
@@ -641,9 +646,9 @@ class _HomeTab extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.75,
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 220,
+                          childAspectRatio: 0.72,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),

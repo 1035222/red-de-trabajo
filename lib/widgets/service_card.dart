@@ -1,4 +1,5 @@
 import '../l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
@@ -27,6 +28,7 @@ class RTServiceCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: AppColors.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(20),
@@ -41,16 +43,12 @@ class RTServiceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              height: 180,
-              width: double.infinity,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
+            Expanded(
+              flex: 3,
+              child: SizedBox(
+                width: double.infinity,
                 child: Image.network(
                   imageUrl,
-                  width: double.infinity,
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, progress) => progress == null
                       ? child
@@ -74,68 +72,80 @@ class RTServiceCard extends StatelessWidget {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  LocalizedText(
-                    serviceName,
-                    style: AppTextStyles.labelMd.copyWith(
-                      fontWeight: FontWeight.w600,
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LocalizedText(
+                      serviceName,
+                      style: AppTextStyles.labelMd.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  LocalizedText(
-                    providerName,
-                    style: AppTextStyles.labelSm,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.secondary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.star_rounded,
-                              size: 12,
-                              color: AppColors.secondary,
-                            ),
-                            const SizedBox(width: 4),
-                            LocalizedText(
-                              rating.toString(),
-                              style: AppTextStyles.labelSm.copyWith(
-                                fontWeight: FontWeight.w600,
+                    const SizedBox(height: 2),
+                    LocalizedText(
+                      providerName,
+                      style: AppTextStyles.labelSm,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                size: 12,
                                 color: AppColors.secondary,
-                                fontSize: 11,
                               ),
+                              const SizedBox(width: 4),
+                              LocalizedText(
+                                rating.toString(),
+                                style: AppTextStyles.labelSm.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.secondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: LocalizedText(
+                            price,
+                            style: AppTextStyles.labelMd.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
                             ),
-                          ],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      LocalizedText(
-                        price,
-                        style: AppTextStyles.labelMd.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

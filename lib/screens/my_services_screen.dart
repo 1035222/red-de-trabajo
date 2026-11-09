@@ -1,5 +1,7 @@
 import '../l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/service.dart';
@@ -35,14 +37,22 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
       final providerId = session?.user?.id ?? 'user_1';
       if (mounted) {
         setState(() {
-          _myServices = services.where((s) => s.providerId == providerId).toList();
+          _myServices = services
+              .where((s) => s.providerId == providerId)
+              .toList();
           _isLoading = false;
         });
       }
     } on Exception catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LocalizedText('Error al cargar servicios: ${e.toString().replaceFirst('Exception: ', '')}')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: LocalizedText(
+              'Error al cargar servicios: ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+          ),
+        );
       }
     }
   }
@@ -51,33 +61,54 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surfaceContainerLowest,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.visibility_outlined, color: AppColors.primary),
+                leading: const Icon(
+                  Icons.visibility_outlined,
+                  color: AppColors.primary,
+                ),
                 title: const LocalizedText('Ver detalle'),
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => ServiceDetailScreen(service: service)));
+                  Navigator.pop(sheetContext);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ServiceDetailScreen(service: service),
+                    ),
+                  );
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                leading: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.primary,
+                ),
                 title: const LocalizedText('Editar'),
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => EditServiceScreen(service: service)));
+                  Navigator.pop(sheetContext);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditServiceScreen(service: service),
+                    ),
+                  );
                 },
               ),
               ListTile(
                 leading: Icon(Icons.delete_outlined, color: AppColors.error),
-                title: LocalizedText('Eliminar', style: TextStyle(color: AppColors.error)),
+                title: LocalizedText(
+                  'Eliminar',
+                  style: TextStyle(color: AppColors.error),
+                ),
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   _confirmDelete(context, service);
                 },
               ),
@@ -94,10 +125,21 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
       builder: (context) {
         return AlertDialog(
           title: const LocalizedText('Eliminar servicio'),
-          content: LocalizedText('¿Estás seguro de que deseas eliminar "${service.title}"?'),
+          content: LocalizedText(
+            '¿Estás seguro de que deseas eliminar "${service.title}"?',
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const LocalizedText('Cancelar')),
-            TextButton(onPressed: () => Navigator.pop(context, true), child: LocalizedText('Eliminar', style: TextStyle(color: AppColors.error))),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const LocalizedText('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: LocalizedText(
+                'Eliminar',
+                style: TextStyle(color: AppColors.error),
+              ),
+            ),
           ],
         );
       },
@@ -105,13 +147,20 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
     if (confirmed == true && context.mounted) {
       try {
         await _serviceRepository.deleteService(service.id);
+        if (!mounted || !context.mounted) return;
         setState(() => _myServices.removeWhere((s) => s.id == service.id));
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LocalizedText('"${service.title}" eliminado')));
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: LocalizedText('"${service.title}" eliminado')),
+        );
       } on Exception catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: LocalizedText('Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}')));
+        if (mounted && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: LocalizedText(
+                'Error al eliminar: ${e.toString().replaceFirst('Exception: ', '')}',
+              ),
+            ),
+          );
         }
       }
     }
@@ -124,55 +173,79 @@ class _MyServicesScreenState extends State<MyServicesScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: LocalizedText('Mis servicios', style: AppTextStyles.titleLg),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _myServices.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.primary.withValues(alpha: 0.12), AppColors.primaryContainer.withValues(alpha: 0.06)]),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Icon(Icons.work_outline_rounded, size: 48, color: AppColors.primary),
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.primary.withValues(alpha: 0.12),
+                          AppColors.primaryContainer.withValues(alpha: 0.06),
+                        ],
                       ),
-                      const SizedBox(height: 24),
-                      LocalizedText('No tienes servicios publicados', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurfaceVariant)),
-                      const SizedBox(height: 8),
-                      LocalizedText('Publica tu primer servicio para comenzar', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
-                    ],
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Icon(
+                      Icons.work_outline_rounded,
+                      size: 48,
+                      color: AppColors.primary,
+                    ),
                   ),
-                )
-              : GridView.builder(
-                  padding: const EdgeInsets.all(20),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.75,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
+                  const SizedBox(height: 24),
+                  LocalizedText(
+                    'No tienes servicios publicados',
+                    style: AppTextStyles.headlineMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
                   ),
-                  itemCount: _myServices.length,
-                  itemBuilder: (context, index) {
-                    final service = _myServices[index];
-                    return RTServiceCard(
-                      imageUrl: service.imageUrl,
-                      serviceName: service.title,
-                      providerName: service.providerName,
-                      rating: service.rating,
-                      price: service.price,
-                      onTap: () {
-                        _showServiceOptions(context, service);
-                      },
-                    );
+                  const SizedBox(height: 8),
+                  LocalizedText(
+                    'Publica tu primer servicio para comenzar',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : GridView.builder(
+              padding: const EdgeInsets.all(20),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 220,
+                childAspectRatio: 0.72,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: _myServices.length,
+              itemBuilder: (context, index) {
+                final service = _myServices[index];
+                return RTServiceCard(
+                  imageUrl: service.imageUrl,
+                  serviceName: service.title,
+                  providerName: service.providerName,
+                  rating: service.rating,
+                  price: service.price,
+                  onTap: () {
+                    _showServiceOptions(context, service);
                   },
-                ),
+                );
+              },
+            ),
     );
   }
 }

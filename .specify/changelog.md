@@ -2,6 +2,18 @@
 
 Una entrada por cada bloque cerrado. Formato: fecha, tipo, descripción.
 
+## 2026-11-08 — feat: agrega sonido y navegación para favoritos
+
+- Las notificaciones móviles reproducen sonido en foreground y background; se respeta la preferencia habilitada por el usuario y web conserva su aviso visual.
+- Las notificaciones de nuevos favoritos abren el servicio correspondiente al tocarlas; la API solo avisa al proveedor al agregar el favorito, no al quitarlo ni al marcar el propio servicio.
+- Se configuró el canal Android con sonido predeterminado y el payload APNs con sonido predeterminado.
+
+## 2026-11-08 — docs: actualiza el mapa funcional
+
+- Se documentó la ubicación de cada flujo en pantallas, repositorios, servicios, rutas API y modelos; se corrigieron descripciones obsoletas que marcaban chat y notificaciones como pendientes.
+- README, AGENTS y documentos SDD distinguen capacidades implementadas de validaciones E2E que aún requieren cuentas/dispositivos reales.
+- Se corrigió una nota histórica de avatar que atribuía la subida a Firebase Storage; la implementación actual usa `/api/uploads`.
+
 ## 2026-10-31 — fix: sincroniza cuentas Google y activa notificaciones
 
 - El acceso con Google ya no obliga a crear una contraseña antes de entrar; el perfil se sincroniza con el backend antes de habilitar la sesión.
@@ -47,7 +59,7 @@ Una entrada por cada bloque cerrado. Formato: fecha, tipo, descripción.
 
 ### Frontend
 - **Avatar overlap**: El widget `RTAvatar` (`lib/widgets/avatar.dart`) mostraba un `CircleAvatar` con un `child` (Container coloreado + ícono de persona) que tapaba la imagen de fondo. Reemplazado por `CachedNetworkImage` con placeholder y manejo de errores. El avatar ahora se muestra sin superposición.
-- **Image picker para avatar**: Agregado `image_picker` ^1.0.0 y `firebase_storage` ^13.5.0 a `pubspec.yaml` (constitución actualizada). `EditProfileScreen` ahora muestra preview de avatar con botón de cámara; al seleccionar una imagen se sube a Firebase Storage y se obtiene la URL de descarga. El campo de email se marcó como `readOnly` (no se persiste vía `PUT /users/me`).
+- **Image picker para avatar**: `EditProfileScreen` permite seleccionar y previsualizar la foto y la carga mediante `ApiService.uploadImage` a `/api/uploads`; el backend devuelve una URL que se guarda en el perfil. El email se marca como `readOnly` (no se persiste vía `PUT /users/me`).
 - **Fallback 'user_1' eliminado**: `ProfileScreen` y `MyProfileScreen` ya no usan `userId = session?.user?.id ?? 'user_1'`. Cuando no hay sesión válida, se muestra explícitamente "No has iniciado sesión" en lugar de cargar datos de un usuario falso.
 - **Form validation**: `EditProfileScreen` ahora usa `Form` + `GlobalKey<FormState>` con `validate()` antes de guardar. Los validators declarativos ahora se aplican efectivamente.
 - **avatarUrl en updatePerfil**: `ApiProfileRepository.updateUserProfile` ahora incluye `avatarUrl` en el cuerpo de `PUT /users/me`.

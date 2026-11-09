@@ -138,8 +138,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _loadingNotifications = false;
       });
     } on Exception catch (error) {
+      final currentPreference = await PushNotificationService.isEnabled();
       if (!mounted) return;
-      setState(() => _loadingNotifications = false);
+      setState(() {
+        _notificationsEnabled = currentPreference;
+        _loadingNotifications = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: LocalizedText(

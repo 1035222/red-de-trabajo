@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -133,8 +134,24 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     _socketService.disconnect();
     _messageController.dispose();
     _scrollController.dispose();
-    _audioPlayer.dispose();
+    unawaited(_audioPlayer.dispose());
+    unawaited(_disposeAudioRecorder());
     super.dispose();
+  }
+
+  Future<void> _disposeAudioRecorder() async {
+    try {
+      if (await _audioRecorder.isRecording()) {
+        await _audioRecorder.cancel();
+      }
+    } on Exception catch (error) {
+      debugPrint('No se pudo detener el grabador al cerrar el chat: $error');
+    }
+    try {
+      await _audioRecorder.dispose();
+    } on Exception catch (error) {
+      debugPrint('No se pudo liberar el grabador de audio: $error');
+    }
   }
 
   Future<void> _loadConversation() async {
@@ -400,38 +417,58 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   Future<void> _sendCurrentLocation() async {
-    final enabled = await Geolocator.isLocationServiceEnabled();
-    if (!enabled) {
+    try {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: LocalizedText('Activa la ubicación del dispositivo'),
+            ),
+          );
+        }
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: LocalizedText('Permiso de ubicación denegado'),
+            ),
+          );
+        }
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 20),
+        ),
+      );
+      if (!mounted) return;
+      await _sendLocation(
+        position.latitude,
+        position.longitude,
+        'Ubicación actual',
+      );
+    } on Exception catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LocalizedText('Activa la ubicación del dispositivo'),
+          SnackBar(
+            content: LocalizedText(
+              'No se pudo obtener la ubicación: ${error.toString().replaceFirst('Exception: ', '')}',
+            ),
           ),
         );
       }
-      return;
     }
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LocalizedText('Permiso de ubicación denegado'),
-          ),
-        );
-      }
-      return;
-    }
-    final position = await Geolocator.getCurrentPosition();
-    await _sendLocation(
-      position.latitude,
-      position.longitude,
-      'Ubicación actual',
-    );
   }
 
   String _formatTime(DateTime time) {
@@ -696,7 +733,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
     }
     try {
       await _audioPlayer.stop();
-      await _audioPlayer.play(UrlSource(url, mimeType: 'audio/webm'));
+      final path = Uri.tryParse(url)?.path.toLowerCase() ?? '';
+      final mimeType = path.endsWith('.m4a')
+          ? 'audio/mp4'
+          : path.endsWith('.webm')
+          ? 'audio/webm'
+          : null;
+      await _audioPlayer.play(UrlSource(url, mimeType: mimeType));
       if (!mounted) return;
       setState(() {
         _playingAudioId = message.id;
@@ -858,6 +901,23 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
                         : Icons.check_rounded,
                     size: 14,
                     color: AppColors.onPrimary.withValues(alpha: 0.75),
+                  ),
+                ],
+                if (isMe) ...[
+                  const SizedBox(width: 4),
+                  IconButton(
+                    tooltip: 'Eliminar mensaje'.tr,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
+                    padding: EdgeInsets.zero,
+                    onPressed: () => _confirmDeleteMessage(message),
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 18,
+                      color: AppColors.onPrimary.withValues(alpha: 0.75),
+                    ),
                   ),
                 ],
               ],
@@ -1101,21 +1161,18 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   Future<void> _sendRecordedAudio() async {
-    if (!await _audioRecorder.hasPermission()) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LocalizedText('Se requiere permiso para grabar audio'),
-          ),
-        );
-      }
-      return;
-    }
-    final path = await _audioRecorder.stop();
-    if (path == null) return;
+    if (_isSending) return;
     setState(() => _isSending = true);
     try {
+      final path = await _audioRecorder.stop();
+      if (path == null) {
+        throw Exception('No se pudo guardar la grabación');
+      }
+      if (!mounted) return;
       final bytes = await XFile(path).readAsBytes();
+      if (bytes.isEmpty) {
+        throw Exception('La grabación está vacía');
+      }
       final audioExtension = kIsWeb ? 'webm' : 'm4a';
       final audioUrl = await _api.uploadImage(
         bytes: bytes,
@@ -1126,13 +1183,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           ? 0
           : DateTime.now().difference(_recordingStartedAt!).inSeconds;
       _recordingStartedAt = null;
+      if (!mounted) return;
       await _socketService.sendMessage(
         conversationId: widget.conversationId,
         text: 'Nota de voz'.tr,
         type: 'audio',
         extra: {'audioDurationSeconds': durationSeconds, 'audioUrl': audioUrl},
       );
-    } on Exception catch (e) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1142,24 +1200,38 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
           ),
         );
       }
+    } finally {
+      _recordingStartedAt = null;
+      if (mounted) setState(() => _isSending = false);
     }
   }
 
   Future<bool> _startAudioRecording() async {
-    if (!await _audioRecorder.hasPermission()) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: LocalizedText('Se requiere permiso para grabar audio'),
-          ),
-        );
-      }
-      return false;
-    }
     try {
+      if (!await _audioRecorder.hasPermission()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: LocalizedText('Se requiere permiso para grabar audio'),
+            ),
+          );
+        }
+        return false;
+      }
+      if (!mounted) return false;
+      final encoder = kIsWeb ? AudioEncoder.opus : AudioEncoder.aacLc;
+      if (!await _audioRecorder.isEncoderSupported(encoder)) {
+        throw Exception('Este dispositivo no admite la grabación de audio');
+      }
+      final extension = kIsWeb ? 'webm' : 'm4a';
+      final filename =
+          'voice_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final path = kIsWeb
+          ? filename
+          : (await getTemporaryDirectory()).uri.resolve(filename).toFilePath();
       await _audioRecorder.start(
-        const RecordConfig(encoder: AudioEncoder.opus),
-        path: 'voice_${DateTime.now().millisecondsSinceEpoch}.webm',
+        RecordConfig(encoder: encoder, numChannels: 1),
+        path: path,
       );
       final started = await _audioRecorder.isRecording();
       if (!started && mounted) {
@@ -1185,8 +1257,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen>
   }
 
   Future<void> _cancelAudioRecording() async {
-    await _audioRecorder.stop();
-    _recordingStartedAt = null;
+    try {
+      await _audioRecorder.cancel();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: LocalizedText('No se pudo cancelar la grabación: $error'),
+          ),
+        );
+      }
+    } finally {
+      _recordingStartedAt = null;
+    }
   }
 
   @override
@@ -1281,6 +1364,7 @@ class _AudioRecordButton extends StatefulWidget {
 class _AudioRecordButtonState extends State<_AudioRecordButton>
     with SingleTickerProviderStateMixin {
   bool _isRecording = false;
+  bool _isBusy = false;
   int _seconds = 0;
   Timer? _timer;
   late AnimationController _pulseController;
@@ -1305,36 +1389,34 @@ class _AudioRecordButtonState extends State<_AudioRecordButton>
     super.dispose();
   }
 
-  Future<void> _startRecording() async {
-    final started = await widget.onStart();
-    if (!started || !mounted) return;
-    setState(() {
-      _isRecording = true;
-      _seconds = 0;
-    });
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() => _seconds++);
-    });
-  }
+  Future<void> _toggleRecording() async {
+    if (_isBusy) return;
+    setState(() => _isBusy = true);
+    try {
+      if (!_isRecording) {
+        final started = await widget.onStart();
+        if (!started || !mounted) return;
+        setState(() {
+          _isRecording = true;
+          _seconds = 0;
+        });
+        _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+          if (mounted) setState(() => _seconds++);
+        });
+        return;
+      }
 
-  Future<void> _stopRecording() async {
-    _timer?.cancel();
-    setState(() => _isRecording = false);
-    if (_seconds >= 1) {
-      await widget.onRecorded();
-    } else {
-      await widget.onCancel();
+      _timer?.cancel();
+      setState(() => _isRecording = false);
+      if (_seconds >= 1) {
+        await widget.onRecorded();
+      } else {
+        await widget.onCancel();
+      }
+      if (mounted) setState(() => _seconds = 0);
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
     }
-  }
-
-  Future<void> _cancelRecording() async {
-    _timer?.cancel();
-    await widget.onCancel();
-    setState(() {
-      _isRecording = false;
-      _seconds = 0;
-    });
   }
 
   @override
@@ -1343,14 +1425,7 @@ class _AudioRecordButtonState extends State<_AudioRecordButton>
         ? '${(_seconds ~/ 60).toString().padLeft(2, '0')}:${(_seconds % 60).toString().padLeft(2, '0')}'
         : null;
     return GestureDetector(
-      onLongPressStart: (_) => _startRecording(),
-      onLongPressEnd: (_) => _stopRecording(),
-      onTap: () => _isRecording ? _stopRecording() : _startRecording(),
-      onHorizontalDragEnd: (details) {
-        if (details.primaryVelocity != null && details.primaryVelocity! > 100) {
-          _cancelRecording();
-        }
-      },
+      onTap: _isBusy ? null : _toggleRecording,
       child: ScaleTransition(
         scale: _isRecording
             ? _pulseAnimation
@@ -1365,7 +1440,13 @@ class _AudioRecordButtonState extends State<_AudioRecordButton>
             borderRadius: BorderRadius.circular(16),
           ),
           child: Center(
-            child: _isRecording
+            child: _isBusy
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : _isRecording
                 ? Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,

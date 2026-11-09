@@ -37,9 +37,7 @@ class AppNavigation {
     _homeIsReady = false;
   }
 
-  static Future<void> _navigateToNotification(
-    Map<String, dynamic> data,
-  ) async {
+  static Future<void> _navigateToNotification(Map<String, dynamic> data) async {
     final navigator = navigatorKey.currentState;
     if (navigator == null) {
       _pendingNotification = Map<String, dynamic>.from(data);
@@ -57,6 +55,23 @@ class AppNavigation {
             builder: (_) => ChatDetailScreen(conversationId: conversationId),
           ),
         );
+      case 'service_favorite':
+        final serviceId = data['serviceId']?.toString();
+        if (serviceId == null || serviceId.isEmpty) return;
+        try {
+          final Service? service = await RepositoryProvider.serviceRepository
+              .getServiceById(serviceId);
+          if (service == null) return;
+          await navigator.push<void>(
+            MaterialPageRoute(
+              builder: (_) => ServiceDetailScreen(service: service),
+            ),
+          );
+        } on Exception catch (error) {
+          debugPrint(
+            'No se pudo abrir el servicio marcado como favorito: $error',
+          );
+        }
       case 'service_request':
         await navigator.push<void>(
           MaterialPageRoute(builder: (_) => const RequestsScreen()),

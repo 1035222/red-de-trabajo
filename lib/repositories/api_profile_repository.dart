@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:red_de_trabajo/services/api_service.dart';
+
 import '../models/app_user.dart';
 import '../models/review.dart';
 import '../models/portfolio_item.dart';
@@ -30,7 +32,9 @@ class ApiProfileRepository implements ProfileRepository {
     if (response.statusCode == 200) {
       return AppUser.fromJson(jsonDecode(response.body));
     }
-    throw Exception('Error al actualizar perfil (${response.statusCode}): ${response.body}');
+    throw Exception(
+      'Error al actualizar perfil (${response.statusCode}): ${response.body}',
+    );
   }
 
   @override
@@ -40,7 +44,7 @@ class ApiProfileRepository implements ProfileRepository {
       final List data = jsonDecode(response.body);
       return data.map((json) => Review.fromJson(json)).toList();
     }
-    return [];
+    throw Exception('Error al obtener reseñas (${response.statusCode})');
   }
 
   @override

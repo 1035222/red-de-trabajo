@@ -4,7 +4,7 @@ README para agentes de IA (Kilo Code y similares) que trabajen en este repositor
 
 ## Overview del proyecto
 
-Frontend de Red de Trabajo, un marketplace de servicios que conecta oferentes y clientes. App Flutter que consume el backend API (Node.js + Express, Prisma + MySQL) en un repositorio separado (`red-de-trabajo-api`). Módulos principales: autenticación (Google Sign-In + Firebase Auth), perfiles, portafolios, servicios/proyectos (con carga de fotos), reseñas y catálogo de servicios.
+Frontend de Red de Trabajo, un marketplace de servicios que conecta oferentes y clientes. App Flutter que consume el backend API (Node.js + Express, Prisma + MySQL) en un repositorio separado (`red-de-trabajo-api`). Los flujos implementados incluyen autenticación, perfiles, catálogo, servicios, portafolios, reseñas, favoritos, solicitudes, chat (texto/fotos/audio/ubicación) y notificaciones push. El mapa de pantallas y archivos por funcionalidad está en `README.md`.
 
 ## Stack
 
@@ -13,6 +13,9 @@ Frontend de Red de Trabajo, un marketplace de servicios que conecta oferentes y 
 - **State/persistence**: `shared_preferences` ^2.2.0 (sesión del usuario, tokens)
 - **Auth**: `google_sign_in` ^6.2.1, `firebase_auth` ^6.6.1, `firebase_core` ^4.14.0
 - **Imágenes**: `cached_network_image` ^3.4.1
+- **Chat**: `socket_io_client` ^3.1.0; mensajes y archivos de chat usan REST para persistencia y Socket.IO para entrega en tiempo real.
+- **Multimedia y ubicación**: `image_picker`, `record`, `audioplayers`, `geolocator`, `path_provider`.
+- **Notificaciones**: `firebase_messaging` ^16.7.1, `flutter_local_notifications` ^22.0.0.
 - **Tipografía**: `google_fonts` ^6.2.1
 - **Design**: Material Design (uses-material-design: true)
 
@@ -20,11 +23,12 @@ Frontend de Red de Trabajo, un marketplace de servicios que conecta oferentes y 
 
 ```
 lib/
-  config/      # Configuración (api_config.dart, tema)
+  config/      # Configuración del backend
+  l10n/        # Localización
   models/      # Modelos de datos (Service, AppUser, Category, etc.)
   repositories/ # Capa de repositorio (abstrae el API service)
   screens/     # Pantallas (UI)
-  services/    # Servicios (API client, session service)
+  services/    # API, Firebase, sesión, sockets, notificaciones y preferencias
   theme/       # Tema y estilos visuales
   utils/       # Utilidades y helpers
   widgets/     # Widgets reutilizables
@@ -34,8 +38,9 @@ lib/
 
 ```bash
 flutter pub get        # instalar dependencias
-flutter run -d chrome  # levantar en web (localhost:3000 para el backend)
+flutter run -d chrome  # levantar web (API local en localhost:3000)
 flutter run -d <device>  # levantar en móvil/emulador (IP LAN para el backend)
+flutter build apk --release
 flutter analyze        # análisis estático
 flutter test           # tests unitarios
 ```
@@ -48,6 +53,8 @@ La URL del backend se gestiona centralmente en `lib/config/api_config.dart`.
 
 La IP LAN se configura en `ApiConfig._hostIp`. Si cambias de red o de máquina, actualiza esta constante.
 
+La APK usa la dirección que tenía configurada al compilar: si se instala en otra red, el dispositivo debe poder llegar a la API por esa dirección (o se debe cambiar la configuración y compilar otra APK). No hay conexión automática al Wi-Fi de una PC.
+
 Android requiere `android:usesCleartextTraffic="true"` en `AndroidManifest.xml` para permitir conexiones HTTP (no HTTPS) en desarrollo.
 
 ## Estilo de código
@@ -56,6 +63,7 @@ Android requiere `android:usesCleartextTraffic="true"` en `AndroidManifest.xml` 
 - `ApiService` separa errores de red (SocketException, TimeoutException) de errores HTTP — los repositorios inspeccionan `statusCode` y `response.body` para mensajes de error detallados.
 - Usa `async/await` con manejo explícito de errores.
 - Los modelos (`fromJson`/`toJson`) deben manejar relaciones anidadas (ej. `provider` dentro de `Service`).
+- Para ubicar controladores, servicios y pantallas, consulta el índice de funcionalidades del `README.md` de este repositorio y el README del backend.
 
 ## Testing
 

@@ -1,4 +1,5 @@
 import '../l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
@@ -117,7 +118,10 @@ class _SearchScreenState extends State<SearchScreen> {
               children: [
                 Row(
                   children: [
-                    LocalizedText('Filtrar servicios', style: AppTextStyles.titleLg),
+                    LocalizedText(
+                      'Filtrar servicios',
+                      style: AppTextStyles.titleLg,
+                    ),
                     const Spacer(),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
@@ -271,10 +275,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
                 child: PopupMenuButton<String>(
-                  icon: Icon(
-                    Icons.sort_rounded,
-                    color: AppColors.onSurface,
-                  ),
+                  icon: Icon(Icons.sort_rounded, color: AppColors.onSurface),
                   onSelected: (value) {
                     setState(() => _sortBy = value);
                     _loadResults();
@@ -386,25 +387,28 @@ class _SearchScreenState extends State<SearchScreen> {
                     final service = _results[index];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16),
-                      child: RTServiceCard(
-                        imageUrl: service.imageUrl,
-                        serviceName: service.title,
-                        providerName: service.providerName,
-                        rating: service.rating,
-                        price: service.price,
-                        onTap: () {
-                          if (widget.onServiceTap != null) {
-                            widget.onServiceTap!(service);
-                          } else {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    ServiceDetailScreen(service: service),
-                              ),
-                            );
-                          }
-                        },
+                      child: SizedBox(
+                        height: 280,
+                        child: RTServiceCard(
+                          imageUrl: service.imageUrl,
+                          serviceName: service.title,
+                          providerName: service.providerName,
+                          rating: service.rating,
+                          price: service.price,
+                          onTap: () {
+                            if (widget.onServiceTap != null) {
+                              widget.onServiceTap!(service);
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      ServiceDetailScreen(service: service),
+                                ),
+                              );
+                            }
+                          },
+                        ),
                       ),
                     );
                   },

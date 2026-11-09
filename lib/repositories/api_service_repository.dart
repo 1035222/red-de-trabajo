@@ -104,10 +104,12 @@ class ApiServiceRepository implements ServiceRepository {
 
   @override
   Future<void> deleteService(String id) async {
-    final response = await _api.delete('/services/$id');
+    final response = await _api.delete('/services/${Uri.encodeComponent(id)}');
     if (response.statusCode == 200 || response.statusCode == 204) {
       return;
     }
-    throw Exception('Error al eliminar servicio (${response.statusCode})');
+    throw Exception(
+      'Error al eliminar servicio (${response.statusCode}): ${response.body}',
+    );
   }
 }

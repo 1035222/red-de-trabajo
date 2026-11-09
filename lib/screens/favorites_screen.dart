@@ -1,6 +1,9 @@
 import '../l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
+
 import 'dart:convert';
+
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../models/service.dart';
@@ -20,20 +23,28 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   Future<List<Service>> _loadFavorites() async {
     final response = await _api.get('/favorites');
-    if (response.statusCode != 200) throw Exception('No se pudieron cargar favoritos');
+    if (response.statusCode != 200) {
+      throw Exception('No se pudieron cargar favoritos');
+    }
     final data = jsonDecode(response.body) as List;
-    return data.map((item) => Service.fromJson(item['service'] as Map<String, dynamic>)).toList();
+    return data
+        .map(
+          (item) => Service.fromJson(item['service'] as Map<String, dynamic>),
+        )
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
         backgroundColor: AppColors.surface,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: LocalizedText('Favoritos', style: AppTextStyles.titleLg),
       ),
       body: FutureBuilder<List<Service>>(
@@ -53,15 +64,36 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.primary.withValues(alpha: 0.12), AppColors.primaryContainer.withValues(alpha: 0.06)]),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.primary.withValues(alpha: 0.12),
+                          AppColors.primaryContainer.withValues(alpha: 0.06),
+                        ],
+                      ),
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    child: Icon(Icons.favorite_border_rounded, size: 48, color: AppColors.primary),
+                    child: Icon(
+                      Icons.favorite_border_rounded,
+                      size: 48,
+                      color: AppColors.primary,
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  LocalizedText('No tienes favoritos guardados', style: AppTextStyles.headlineMd.copyWith(color: AppColors.onSurfaceVariant)),
+                  LocalizedText(
+                    'No tienes favoritos guardados',
+                    style: AppTextStyles.headlineMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  LocalizedText('Explora servicios y guarda tus favoritos', style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
+                  LocalizedText(
+                    'Explora servicios y guarda tus favoritos',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             );
@@ -69,9 +101,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
           return GridView.builder(
             padding: const EdgeInsets.all(20),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.65,
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 220,
+              childAspectRatio: 0.72,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
             ),
@@ -85,7 +117,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 rating: service.rating,
                 price: service.price,
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => ServiceDetailScreen(service: service)));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ServiceDetailScreen(service: service),
+                    ),
+                  );
                 },
               );
             },

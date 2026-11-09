@@ -12,7 +12,7 @@ lib/
   models/      # Modelos de datos (Service, AppUser, Category, etc.)
   repositories/ # Capa de repositorio (interface abstracta + implementación)
   screens/     # Pantallas/UI (una por funcionalidad)
-  services/    # Servicios: ApiService (cliente HTTP), SessionService (tokens)
+  services/    # API, Firebase, sesión, sockets, notificaciones y preferencias
   theme/       # Tema y estilos visuales
   utils/       # Utilidades y helpers
   widgets/     # Widgets reutilizables
@@ -21,6 +21,8 @@ lib/
 - Los repositorios definen una interfaz abstracta (`ServiceRepository`, etc.) y una implementación concreta (`ApiServiceRepository`). Para testing, se pueden crear implementaciones mock sin tocar el código de producción.
 - Los modelos deben implementar `fromJson` / `toJson` manejando relaciones anidadas (ej. `provider` dentro de `Service`).
 - `ApiConfig.baseUrl` gestiona la URL del backend: `localhost` para web, IP LAN para dispositivos móviles. Ver `AndroidManifest.xml` para `cleartextTraffic`.
+- Archivos de servicio y chat se cargan mediante `/api/uploads` del backend y se referencian por URL; no se asume Firebase Storage.
+- Repositorios reales, pantallas y servicios por funcionalidad están indexados en el README de raíz.
 
 ## Seguridad y zonas intocables
 
@@ -55,8 +57,11 @@ Este flujo ya funciona en producción y se ha dañado repetidamente al hacer cam
   - `cached_network_image` ^3.4.1 (imágenes)
   - `google_fonts` ^6.2.1 (tipografía)
   - `image_picker` ^1.0.0 (selección de imágenes desde galería/archivos)
-  - `firebase_storage` ^13.5.0 (subida de imágenes al bucket de Firebase Storage)
   - `socket_io_client` ^3.1.0 (chat en tiempo real con Socket.io)
+  - `record` y `audioplayers` (grabación y reproducción de audio)
+  - `geolocator` (ubicación para chat)
+  - `firebase_messaging` (push) y `flutter_local_notifications` (aviso sonoro local en foreground móvil)
+  - `path_provider` (archivos locales temporales)
 - No se introducen gestores de estado (como `provider`, `riverpod`, `bloc`) ni paquetes nuevos sin actualizar esta constitución primero.
 - `ApiService` separa errores de red (`SocketException`, `TimeoutException`) de errores HTTP: los repositorios inspeccionan `statusCode` y `response.body` para mensajes de error detallados.
 - El proyecto usa Material Design (`uses-material-design: true`).
